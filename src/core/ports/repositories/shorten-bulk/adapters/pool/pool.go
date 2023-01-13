@@ -1,19 +1,20 @@
 package adapters
 
-type ShortenBulkRepositoryPool struct {
+type ShortenBulkRepositoryPigeonhole struct {
 	readCount               int
 	writeCount              int
 	shortenBulkRepositories []*ShortenBulkRepository
 }
 
-func NewShortenBulkPoolRepository(shortenBulkRepositories []*ShortenBulkRepository) *ShortenBulkPoolRepository {
+func NewShortenBulkRepositoryPigeonhole(shortenBulkRepositories []*ShortenBulkRepository) *ShortenBulkRepositoryPigeonhole {
 	//Pigeonhole principle
-	pigeons := len(shortenBulkRepositories) + 1
+	pigeonsHoles := len(shortenBulkRepositories)
+	pigeons := pigeonsHoles + 1
 
 	readCount := pigeons / 2
 	writeCount := pigeons - readCount
 
-	return &ShortenBulkRepositoryPool{
+	return &ShortenBulkRepositoryPigeonhole{
 		readCount,
 		writeCount,
 		shortenBulkRepositories,
