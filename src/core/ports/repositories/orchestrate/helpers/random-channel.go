@@ -6,15 +6,16 @@ import (
 
 func NewRandomChannel[T any](
 	elements []T,
-) chan T {
+) <-chan T {
 	size := len(elements)
-
 	ch := make(chan T, size)
-	for i := 0; i < size; i++ {
-		randomIndex := rand.Intn(size - i)
-		lastIndex := size - i - 1
-		elements[randomIndex], elements[lastIndex] =
-			elements[lastIndex], elements[randomIndex]
+	for ; size > 0; size-- {
+		randomIndex := rand.Intn(size)
+		lastIndex := size - 1
+		if randomIndex != lastIndex {
+			elements[randomIndex], elements[lastIndex] =
+				elements[lastIndex], elements[randomIndex]
+		}
 		ch <- elements[lastIndex]
 	}
 
