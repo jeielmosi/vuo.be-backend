@@ -1,11 +1,10 @@
-package adapters
+package ports
 
-import (
-	"time"
-)
+import "time"
 
 type PigeonholeDTO[T any] struct {
 	Entity    *T
+	Locked    bool
 	LockedAt  *time.Time
 	UpdatedAt time.Time
 }
@@ -16,10 +15,9 @@ func (lhs *PigeonholeDTO[T]) Compare(rhs *PigeonholeDTO[T]) int {
 		return 0
 	}
 	if (lhs == nil) != (rhs == nil) {
-		if lhs != nil {
+		if lhs == nil {
 			return 1
 		}
-
 		return -1
 	}
 
@@ -30,21 +28,19 @@ func (lhs *PigeonholeDTO[T]) Compare(rhs *PigeonholeDTO[T]) int {
 		return 1
 	}
 
-	if (lhs.LockedAt == nil) && (rhs.LockedAt == nil) {
+	if !lhs.Locked && !rhs.Locked {
 		return 0
 	}
-	if (lhs.LockedAt == nil) != (rhs.LockedAt == nil) {
-		if lhs.LockedAt != nil {
+	if lhs.Locked != rhs.Locked {
+		if lhs.Locked {
 			return 1
 		}
-
 		return -1
 	}
 
 	if lhs.LockedAt.Before(*rhs.LockedAt) {
 		return -1
 	}
-
 	if lhs.LockedAt.After(*rhs.LockedAt) {
 		return 1
 	}
@@ -70,6 +66,7 @@ func NewPigeonholeDTO[T any](
 
 	return &PigeonholeDTO[T]{
 		Entity:    entity,
+		Locked:    (lockedAtTime == nil),
 		LockedAt:  lockedAtTime,
 		UpdatedAt: *updatedAtTime,
 	}, nil
