@@ -11,7 +11,7 @@ type PigeonholeOrchestrator[T any, K any] struct {
 }
 
 func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
-	worker SingleOperationFunction[T, *K],
+	worker SingleOperationFunction[T, K],
 ) (res *K, err error) {
 	if len(*o.repositories) < o.worksSize {
 		return res, errors.New("Internal error: Not enough repositories")
@@ -19,7 +19,7 @@ func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
 	randomRepositories := NewRandomChannel(o.repositories)
 
 	var wg sync.WaitGroup
-	resultCh := make(chan PigeonholeDTO[*K], o.worksSize)
+	resultCh := make(chan PigeonholeDTO[K], o.worksSize)
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
 		go func() {

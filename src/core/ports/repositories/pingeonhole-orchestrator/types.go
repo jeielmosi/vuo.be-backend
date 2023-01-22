@@ -66,7 +66,7 @@ func NewPigeonholeDTO[T any](
 
 	return &PigeonholeDTO[T]{
 		Entity:    entity,
-		Locked:    (lockedAtTime == nil),
+		Locked:    (lockedAtTime != nil),
 		LockedAt:  lockedAtTime,
 		UpdatedAt: *updatedAtTime,
 	}, nil

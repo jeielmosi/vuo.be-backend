@@ -18,9 +18,9 @@ func NewRandomChannel[T any](
 	)
 
 	size := len(*elements)
-	permutation := make([]uint, size)
+	permutation := make([]int, size)
 	for i := 0; i < size; i++ {
-		permutation[i] = uint(i)
+		permutation[i] = i
 	}
 
 	ch := make(chan T, size)
