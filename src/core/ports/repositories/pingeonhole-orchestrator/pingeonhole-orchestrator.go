@@ -12,14 +12,14 @@ type PigeonholeOrchestrator[T any, K any] struct {
 
 func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
 	worker SingleOperationFunction[T, K],
-) (res *K, err error) {
+) (res *DatabaseDTO[K], err error) {
 	if len(*o.repositories) < o.worksSize {
 		return res, errors.New("Internal error: Not enough repositories")
 	}
 	randomRepositories := NewRandomChannel(o.repositories)
 
 	var wg sync.WaitGroup
-	resultCh := make(chan PigeonholeDTO[K], o.worksSize)
+	resultCh := make(chan DatabaseDTO[K], o.worksSize)
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
 		go func() {
@@ -47,7 +47,7 @@ func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
 	}
 	close(resultCh)
 
-	return ans.Entity, nil
+	return &ans.Entity, nil
 }
 
 type valueCount[T any] struct {
@@ -57,14 +57,14 @@ type valueCount[T any] struct {
 
 func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 	worker MultipleOperationFunction[T, K],
-) (res map[string]K, err error) {
+) (res map[string]*DatabaseDTO[K], err error) {
 	if len(*o.repositories) < o.worksSize {
 		return res, errors.New("Internal error: Not enough repositories")
 	}
 	randomRepositories := NewRandomChannel(o.repositories)
 
 	var wg sync.WaitGroup
-	resultCh := make(chan map[string]PigeonholeDTO[K], o.worksSize)
+	resultCh := make(chan map[string]*DatabaseDTO[K], o.worksSize)
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
 		go func() {
@@ -84,11 +84,11 @@ func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 		return res, errors.New("Internal error: Not enough successful workers")
 	}
 
-	valueCountMap := map[string]valueCount[PigeonholeDTO[K]]{}
+	valueCountMap := map[string]valueCount[*DatabaseDTO[K]]{}
 	for resultMap := range resultCh {
 		for key, newValue := range resultMap {
 			if _, ok := valueCountMap[key]; !ok {
-				valueCountMap[key] = valueCount[PigeonholeDTO[K]]{
+				valueCountMap[key] = valueCount[*DatabaseDTO[K]]{
 					Value: newValue,
 					Count: 0,
 				}
@@ -100,10 +100,10 @@ func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 		}
 	}
 
-	ans := map[string]K{}
+	ans := map[string]*DatabaseDTO[K]{}
 	for key, valueCount := range valueCountMap {
 		if valueCount.Count == o.worksSize {
-			ans[key] = valueCount.Value.Entity
+			ans[key] = &valueCount.Value
 		}
 	}
 

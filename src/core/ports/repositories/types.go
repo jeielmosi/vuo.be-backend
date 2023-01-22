@@ -2,14 +2,14 @@ package ports
 
 import "time"
 
-type PigeonholeDTO[T any] struct {
+type DatabaseDTO[T any] struct {
 	Entity    *T
 	Locked    bool
 	LockedAt  *time.Time
 	UpdatedAt time.Time
 }
 
-func (lhs *PigeonholeDTO[T]) Compare(rhs *PigeonholeDTO[T]) int {
+func (lhs *DatabaseDTO[T]) Compare(rhs *DatabaseDTO[T]) int {
 
 	if (lhs == nil) && (rhs == nil) {
 		return 0
@@ -48,11 +48,11 @@ func (lhs *PigeonholeDTO[T]) Compare(rhs *PigeonholeDTO[T]) int {
 	return 0
 }
 
-func NewPigeonholeDTO[T any](
+func NewDatabaseDTO[T any](
 	entity *T,
 	lockedAt *string,
 	updatedAt string,
-) (*PigeonholeDTO[T], error) {
+) (*DatabaseDTO[T], error) {
 
 	lockedAtTime, err := NewTimeFrom10NanosecondsString(lockedAt)
 	if err != nil {
@@ -64,7 +64,7 @@ func NewPigeonholeDTO[T any](
 		return nil, err
 	}
 
-	return &PigeonholeDTO[T]{
+	return &DatabaseDTO[T]{
 		Entity:    entity,
 		Locked:    (lockedAtTime != nil),
 		LockedAt:  lockedAtTime,
