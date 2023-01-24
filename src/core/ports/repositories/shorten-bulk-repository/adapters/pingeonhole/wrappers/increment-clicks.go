@@ -12,7 +12,7 @@ func NewIncrementClicksWrapper(hash string) *IncrementClicksWrapper {
 
 func (this *IncrementClicksWrapper) work (repository *ShortenBulkRepository) 
 (
-	*DatabaseDTO[K],
+	*RepositoryDTO[K],
 	error,
 ) {
 	err :=  repository.IncrementClicks(this.hash)

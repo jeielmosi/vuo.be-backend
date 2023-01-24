@@ -1,15 +1,19 @@
 package ports
 
-import "time"
+import (
+	"time"
 
-type DatabaseDTO[T any] struct {
+	helpers "github.com/jei-el/vuo.be-backend/core/ports/repositotories/helpers"
+)
+
+type RepositoryDTO[T any] struct {
 	Entity    *T
 	Locked    bool
 	LockedAt  *time.Time
 	UpdatedAt time.Time
 }
 
-func (lhs *DatabaseDTO[T]) Compare(rhs *DatabaseDTO[T]) int {
+func (lhs *RepositoryDTO[T]) Compare(rhs *RepositoryDTO[T]) int {
 
 	if (lhs == nil) && (rhs == nil) {
 		return 0
@@ -48,23 +52,23 @@ func (lhs *DatabaseDTO[T]) Compare(rhs *DatabaseDTO[T]) int {
 	return 0
 }
 
-func NewDatabaseDTO[T any](
+func NewRepositoryDTO[T any](
 	entity *T,
 	lockedAt *string,
 	updatedAt string,
-) (*DatabaseDTO[T], error) {
+) (*RepositoryDTO[T], error) {
 
-	lockedAtTime, err := NewTimeFrom10NanosecondsString(lockedAt)
+	lockedAtTime, err := helpers.NewTimeFrom10NanosecondsString(lockedAt)
 	if err != nil {
 		return nil, err
 	}
 
-	updatedAtTime, err := NewTimeFrom10NanosecondsString(&updatedAt)
+	updatedAtTime, err := helpers.NewTimeFrom10NanosecondsString(&updatedAt)
 	if err != nil {
 		return nil, err
 	}
 
-	return &DatabaseDTO[T]{
+	return &RepositoryDTO[T]{
 		Entity:    entity,
 		Locked:    (lockedAtTime != nil),
 		LockedAt:  lockedAtTime,

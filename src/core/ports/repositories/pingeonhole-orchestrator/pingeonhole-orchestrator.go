@@ -12,14 +12,14 @@ type PigeonholeOrchestrator[T any, K any] struct {
 
 func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
 	worker SingleOperationFunction[T, K],
-) (res *DatabaseDTO[K], err error) {
+) (res *RepositoryDTO[K], err error) {
 	if len(*o.repositories) < o.worksSize {
 		return res, errors.New("Internal error: Not enough repositories")
 	}
 	randomRepositories := NewRandomChannel(o.repositories)
 
 	var wg sync.WaitGroup
-	resultCh := make(chan DatabaseDTO[K], o.worksSize)
+	resultCh := make(chan RepositoryDTO[K], o.worksSize)
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
 		go func() {
@@ -57,14 +57,14 @@ type valueCount[T any] struct {
 
 func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 	worker MultipleOperationFunction[T, K],
-) (res map[string]*DatabaseDTO[K], err error) {
+) (res map[string]*RepositoryDTO[K], err error) {
 	if len(*o.repositories) < o.worksSize {
 		return res, errors.New("Internal error: Not enough repositories")
 	}
 	randomRepositories := NewRandomChannel(o.repositories)
 
 	var wg sync.WaitGroup
-	resultCh := make(chan map[string]*DatabaseDTO[K], o.worksSize)
+	resultCh := make(chan map[string]*RepositoryDTO[K], o.worksSize)
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
 		go func() {
@@ -84,11 +84,11 @@ func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 		return res, errors.New("Internal error: Not enough successful workers")
 	}
 
-	valueCountMap := map[string]valueCount[*DatabaseDTO[K]]{}
+	valueCountMap := map[string]valueCount[*RepositoryDTO[K]]{}
 	for resultMap := range resultCh {
 		for key, newValue := range resultMap {
 			if _, ok := valueCountMap[key]; !ok {
-				valueCountMap[key] = valueCount[*DatabaseDTO[K]]{
+				valueCountMap[key] = valueCount[*RepositoryDTO[K]]{
 					Value: newValue,
 					Count: 0,
 				}
@@ -100,7 +100,7 @@ func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 		}
 	}
 
-	ans := map[string]*DatabaseDTO[K]{}
+	ans := map[string]*RepositoryDTO[K]{}
 	for key, valueCount := range valueCountMap {
 		if valueCount.Count == o.worksSize {
 			ans[key] = &valueCount.Value

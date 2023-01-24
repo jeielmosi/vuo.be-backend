@@ -12,7 +12,7 @@ func NewGetOldestsWrapper(size uint) *GetOldestsWrapper {
 
 func (this *GetOldestsWrapper) work(repository *ShortenBulkRepository) 
 (
-	map[string]*DatabaseDTO[K], 
+	map[string]*RepositoryDTO[K], 
 	error,
 ) {
 	return repository.GetOldests(this.size)

@@ -12,7 +12,7 @@ func NewGetHashWrapper(hash string) *GetByHashWrapper {
 
 func (this *GetByHashWrapper) work (repository *ShortenBulkRepository) 
 (
-	*DatabaseDTO[K],
+	*RepositoryDTO[K],
 	error,
 ) {
 	return repository.GetByHash(this.hash)

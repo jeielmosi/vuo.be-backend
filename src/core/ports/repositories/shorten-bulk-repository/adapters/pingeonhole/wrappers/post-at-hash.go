@@ -12,7 +12,7 @@ func NewPostAtHashWrapperWrapper(hash string) *PostAtHashWrapper {
 
 func (this *PostAtHashWrapper) work (repository *ShortenBulkRepository) 
 (
-	*DatabaseDTO[K],
+	*RepositoryDTO[K],
 	error,
 ) {
 	err :=  repository.PostAtHash(this.hash)
