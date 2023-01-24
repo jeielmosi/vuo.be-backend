@@ -3,7 +3,7 @@ package ports
 import (
 	"time"
 
-	helpers "github.com/jei-el/vuo.be-backend/core/ports/repositotories/helpers"
+	helpers "github.com/jei-el/vuo.be-backend/core/ports/repositories/helpers"
 )
 
 type RepositoryDTO[T any] struct {
