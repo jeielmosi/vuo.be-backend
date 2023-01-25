@@ -1,9 +1,9 @@
-package ports
+package types
 
 import (
 	"time"
 
-	helpers "github.com/jei-el/vuo.be-backend/core/ports/repositories/helpers"
+	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
 )
 
 type RepositoryDTO[T any] struct {
