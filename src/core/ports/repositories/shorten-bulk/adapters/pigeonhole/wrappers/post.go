@@ -1,24 +1,24 @@
 package wrappers
 
 import (
+	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
+	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers/pigeonhole-orchestrator"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
-	ports "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
+	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
 type PostWrapper struct {
 	hash string
 }
 
-func NewPostWrapper(hash string) *PostWrapper {
-	return &PostWrapper{
-		hash,
-	}
-}
-
-func (this *PostWrapper) work(repository *shorten_bulk.ShortenBulkRepository) (
-	*ports.RepositoryDTO[any],
+func (p *PostWrapper) work(repository *shorten_bulk.ShortenBulkRepository) (
+	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
-	err := (*repository).Post(this.hash)
+	err := (*repository).Post(p.hash)
 	return nil, err
+}
+
+func NewPostWrapper(hash string) *helpers.SingleOperation[shorten_bulk.ShortenBulkRepository, entities.ShortenBulkEntity] {
+	return &PostWrapper{hash}
 }

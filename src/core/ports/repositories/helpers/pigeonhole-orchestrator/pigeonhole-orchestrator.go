@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
-	ports "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
+	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
 type PigeonholeOrchestrator[T any, K any] struct {
@@ -13,16 +13,16 @@ type PigeonholeOrchestrator[T any, K any] struct {
 	repositories *[]*T
 }
 
-func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
+func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleOperation(
 	worker SingleOperation[T, K],
-) (res *ports.RepositoryDTO[K], err error) {
+) (*repositories.RepositoryDTO[K], error) {
 	if len(*o.repositories) < o.worksSize {
-		return res, errors.New("Internal error: Not enough repositories")
+		return nil, errors.New("Internal error: Not enough repositories")
 	}
 	randomRepositories := helpers.NewRandomChannel(o.repositories)
 
 	var wg sync.WaitGroup
-	resultCh := make(chan *ports.RepositoryDTO[K], o.worksSize)
+	resultCh := make(chan *repositories.RepositoryDTO[K], o.worksSize)
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
 		go func() {
@@ -39,12 +39,12 @@ func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
 	wg.Wait()
 
 	if len(resultCh) != o.worksSize {
-		return res, errors.New("Internal error: Not enough successful workers")
+		return nil, errors.New("Internal error: Not enough successful workers")
 	}
 
 	ans := <-resultCh
 	for result := range resultCh {
-		if ans.Compare(result) > 0 {
+		if ans.IsOlderThan(result) {
 			ans = result
 		}
 	}
@@ -58,7 +58,7 @@ type valueCount[T any] struct {
 	Count int
 }
 
-func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
+func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
 	worker MultipleOperation[T, K],
 ) (res map[string]*ports.RepositoryDTO[K], err error) {
 	if len(*o.repositories) < o.worksSize {
@@ -101,7 +101,7 @@ func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 					Value: newValue,
 					Count: 0,
 				}
-			} else if curr.Value.Compare(newValue) > 0 {
+			} else if curr.Value.IsOlderThan(newValue) {
 				curr.Value = newValue
 			}
 			curr.Count++

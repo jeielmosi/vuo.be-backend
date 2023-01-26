@@ -1,12 +1,13 @@
 package shorten_bulk
 
 import (
-	types "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/types"
+	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
+	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
 type ShortenBulkRepository interface {
-	Get(hash string) (*types.ShortenBulkDTO, error)
-	GetOldests(size uint) (map[string]*types.ShortenBulkDTO, error)
+	Get(hash string) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error)
+	GetOldests(size uint) (map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity], error)
 	Post(hash string) error
 	IncrementClicks(hash string) error
 }

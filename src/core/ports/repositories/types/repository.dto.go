@@ -1,4 +1,4 @@
-package types
+package repositories
 
 import (
 	"time"
@@ -8,48 +8,51 @@ import (
 
 type RepositoryDTO[T any] struct {
 	Entity    *T
-	Locked    bool
 	LockedAt  *time.Time
 	UpdatedAt time.Time
 }
 
-func (lhs *RepositoryDTO[T]) Compare(rhs *RepositoryDTO[T]) int {
+func (r *RepositoryDTO[T]) IsLocked() bool {
+	return r.LockedAt != nil
+}
+
+func (lhs *RepositoryDTO[T]) IsOlderThan(rhs *RepositoryDTO[T]) bool {
 
 	if (lhs == nil) && (rhs == nil) {
-		return 0
+		return false
 	}
 	if (lhs == nil) != (rhs == nil) {
 		if lhs == nil {
-			return 1
+			return true
 		}
-		return -1
+		return false
 	}
 
 	if lhs.UpdatedAt.Before(rhs.UpdatedAt) {
-		return -1
+		return true
 	}
 	if lhs.UpdatedAt.After(rhs.UpdatedAt) {
-		return 1
+		return false
 	}
 
-	if !lhs.Locked && !rhs.Locked {
-		return 0
+	if !lhs.IsLocked() && !rhs.IsLocked() {
+		return false
 	}
-	if lhs.Locked != rhs.Locked {
-		if lhs.Locked {
-			return 1
+	if lhs.IsLocked() != rhs.IsLocked() {
+		if lhs.IsLocked() {
+			return true
 		}
-		return -1
+		return false
 	}
 
 	if lhs.LockedAt.Before(*rhs.LockedAt) {
-		return -1
+		return true
 	}
 	if lhs.LockedAt.After(*rhs.LockedAt) {
-		return 1
+		return false
 	}
 
-	return 0
+	return false
 }
 
 func NewRepositoryDTO[T any](
@@ -70,7 +73,6 @@ func NewRepositoryDTO[T any](
 
 	return &RepositoryDTO[T]{
 		Entity:    entity,
-		Locked:    (lockedAtTime != nil),
 		LockedAt:  lockedAtTime,
 		UpdatedAt: *updatedAtTime,
 	}, nil

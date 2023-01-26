@@ -1,24 +1,24 @@
 package wrappers
 
 import (
+	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
+	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers/pigeonhole-orchestrator"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
-	types "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/types"
+	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
 type GetWrapper struct {
 	hash string
 }
 
-func NewGetWrapper(hash string) *GetWrapper {
-	return &GetWrapper{
-		hash,
-	}
-}
-
-func (this *GetWrapper) work(repository *shorten_bulk.ShortenBulkRepository) (
-	*types.ShortenBulkDTO,
+func (g *GetWrapper) work(repository *shorten_bulk.ShortenBulkRepository) (
+	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
 
-	return (*repository).Get(this.hash)
+	return (*repository).Get(g.hash)
+}
+
+func NewGetWrapper(hash string) *helpers.SingleOperation[shorten_bulk.ShortenBulkRepository, entities.ShortenBulkEntity] {
+	return &GetWrapper{hash}
 }
