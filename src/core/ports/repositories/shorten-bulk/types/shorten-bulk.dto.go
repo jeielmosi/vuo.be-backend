@@ -1,4 +1,4 @@
-package types
+package shorten_bulk
 
 import (
 	domain "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
@@ -6,3 +6,11 @@ import (
 )
 
 type ShortenBulkDTO = types.RepositoryDTO[domain.ShortenBulkEntity]
+
+func NewShortenBulkDTO(
+	entity *domain.ShortenBulkEntity,
+	lockedAt *string,
+	updatedAt string,
+) (*ShortenBulkDTO, error) {
+	return types.NewRepositoryDTO(entity, lockedAt, updatedAt)
+}

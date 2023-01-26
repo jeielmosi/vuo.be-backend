@@ -2,13 +2,23 @@ package adapters
 
 import (
 	domain "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
-	pigeonhole_orchestrator "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/pigeonhole-orchestrator"
-	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk-repository"
-	wrappers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk-repository/adapters/pigeonhole/wrappers"
+	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers/pigeonhole-orchestrator"
+	wrappers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole/wrappers"
+	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 )
 
+type Orchestrator = helpers.PigeonholeOrchestrator[shorten_bulk.ShortenBulkRepository, domain.ShortenBulkEntity]
+
+func NewOrchestrator(repos *[]*shorten_bulk.ShortenBulkRepository) (
+	*Orchestrator,
+	error,
+) {
+	return helpers.
+		NewPigeonholeOrchestrator[shorten_bulk.ShortenBulkRepository, domain.ShortenBulkEntity](repos)
+}
+
 type PigeonholeShortenBulkRepository struct {
-	orchestrator pigeonhole_orchestrator.PigeonholeOrchestrator[repositories.ShortenBulkRepository, domain.ShortenBulkEntity]
+	orchestrator *Orchestrator
 }
 
 func (this *PigeonholeShortenBulkRepository) Get(hash string) (*domain.ShortenBulkEntity, error) {
@@ -48,9 +58,16 @@ func (this *PigeonholeShortenBulkRepository) IncrementClicks(hash string) error 
 	return err
 }
 
-func NewPigeonholeShortenBulkRepository(repositories []*repositories.ShortenBulkRepository) *PigeonholeShortenBulkRepository {
-	return &PigeonholeShortenBulkRepository{
-		orchestrator: pigeonhole_orchestrator.
-			NewPigeonholeOrchestrator[repositories.ShortenBulkRepository, domain.ShortenBulkEntity](repositories),
+func NewPigeonholeShortenBulkRepository(repos *[]*shorten_bulk.ShortenBulkRepository) (
+	*PigeonholeShortenBulkRepository,
+	error,
+) {
+	orchestrator, err := NewOrchestrator(repos)
+	if err != nil {
+		return nil, err
 	}
+
+	return &PigeonholeShortenBulkRepository{
+		orchestrator,
+	}, nil
 }

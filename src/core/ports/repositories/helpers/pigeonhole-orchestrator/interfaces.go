@@ -1,4 +1,4 @@
-package pigeonhole_orchestrator
+package helpers
 
 import (
 	types "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"

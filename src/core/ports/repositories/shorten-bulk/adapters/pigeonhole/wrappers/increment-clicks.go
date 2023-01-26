@@ -1,7 +1,7 @@
 package wrappers
 
 import (
-	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk-repository"
+	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	ports "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
@@ -15,7 +15,7 @@ func NewIncrementClicksWrapper(hash string) *IncrementClicksWrapper {
 	}
 }
 
-func (this *IncrementClicksWrapper) work(repository *repositories.ShortenBulkRepository) (
+func (this *IncrementClicksWrapper) work(repository *shorten_bulk.ShortenBulkRepository) (
 	*ports.RepositoryDTO[any],
 	error,
 ) {

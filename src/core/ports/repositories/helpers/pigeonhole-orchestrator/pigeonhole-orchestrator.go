@@ -1,16 +1,16 @@
-package pigeonhole_orchestrator
+package helpers
 
 import (
 	"errors"
 	"sync"
 
-	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/pigeonhole-orchestrator/helpers"
+	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
 	ports "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
 type PigeonholeOrchestrator[T any, K any] struct {
 	worksSize    int
-	repositories *[]T
+	repositories *[]*T
 }
 
 func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
@@ -27,7 +27,7 @@ func (o *PigeonholeOrchestrator[T, K]) SingleOperation(
 		wg.Add(1)
 		go func() {
 			for repository, ok := <-randomRepositories; ok; repository, ok = <-randomRepositories {
-				res, err := worker.work(&repository)
+				res, err := worker.work(repository)
 				if err == nil {
 					resultCh <- res
 					break
@@ -73,7 +73,7 @@ func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 		go func() {
 			finished := false
 			for repository, ok := <-randomRepositories; ok; repository, ok = <-randomRepositories {
-				res, err := worker.work(&repository)
+				res, err := worker.work(repository)
 				if err == nil {
 					resultCh <- res
 					finished = true
@@ -120,7 +120,7 @@ func (o *PigeonholeOrchestrator[T, K]) MultipleOperation(
 }
 
 func NewPigeonholeOrchestrator[T any, K any](
-	repositories *[]T,
+	repositories *[]*T,
 ) (*PigeonholeOrchestrator[T, K], error) {
 	if repositories == nil {
 		return nil, errors.New("Internal error: Repositories is a nil pointer")
