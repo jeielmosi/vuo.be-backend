@@ -4,7 +4,7 @@ import (
 	domain "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers/pigeonhole-orchestrator"
-	wrappers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole/wrappers"
+	operations "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole/operations"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 )
 
@@ -13,8 +13,8 @@ type PigeonholeShortenBulkRepository struct {
 }
 
 func (p *PigeonholeShortenBulkRepository) Get(hash string) (*domain.ShortenBulkEntity, error) {
-	worker := wrappers.NewGetWrapper(hash)
-	res, err := p.orchestrator.ExecuteSingleOperation(worker)
+	operation := operations.NewGetOperation(hash)
+	res, err := p.orchestrator.ExecuteSingleOperation(operation)
 	if err != nil {
 		return nil, err
 	}
@@ -23,8 +23,8 @@ func (p *PigeonholeShortenBulkRepository) Get(hash string) (*domain.ShortenBulkE
 }
 
 func (p *PigeonholeShortenBulkRepository) GetOldest(size uint) (map[string]*domain.ShortenBulkEntity, error) {
-	worker := wrappers.NewGetOldestsWrapper(size)
-	res, err := p.orchestrator.ExecuteMultipleOperation(worker)
+	operation := operations.NewGetOldestsOperation(size)
+	res, err := p.orchestrator.ExecuteMultipleOperation(operation)
 	if err != nil {
 		return nil, err
 	}
@@ -38,14 +38,14 @@ func (p *PigeonholeShortenBulkRepository) GetOldest(size uint) (map[string]*doma
 }
 
 func (p *PigeonholeShortenBulkRepository) Post(hash string) error {
-	worker := wrappers.NewPostWrapper(hash)
-	_, err := p.orchestrator.ExecuteSingleOperation(worker)
+	operation := operations.NewPostOperation(hash)
+	_, err := p.orchestrator.ExecuteSingleOperation(operation)
 	return err
 }
 
 func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string) error {
-	worker := wrappers.NewIncrementClicksWrapper(hash)
-	_, err := p.orchestrator.ExecuteSingleOperation(worker)
+	operation := operations.NewIncrementClicksOperation(hash)
+	_, err := p.orchestrator.ExecuteSingleOperation(operation)
 	return err
 }
 

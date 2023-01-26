@@ -14,7 +14,8 @@ type PigeonholeOrchestrator[T any, K any] struct {
 }
 
 func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleOperation(
-	worker SingleOperation[T, K],
+	//worker SingleOperation[T, K],
+	singleOperation func(*T) (*repositories.RepositoryDTO[K], error),
 ) (*repositories.RepositoryDTO[K], error) {
 	if len(*o.repositories) < o.worksSize {
 		return nil, errors.New("Internal error: Not enough repositories")
@@ -27,7 +28,8 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleOperation(
 		wg.Add(1)
 		go func() {
 			for repository, ok := <-randomRepositories; ok; repository, ok = <-randomRepositories {
-				res, err := worker.work(repository)
+				//res, err := worker.work(repository)
+				res, err := singleOperation(repository)
 				if err == nil {
 					resultCh <- res
 					break
@@ -59,21 +61,23 @@ type valueCount[T any] struct {
 }
 
 func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
-	worker MultipleOperation[T, K],
-) (res map[string]*ports.RepositoryDTO[K], err error) {
+	//worker MultipleOperation[T, K],
+	multipleOperation func(*T) (map[string]*repositories.RepositoryDTO[K], error),
+) (res map[string]*repositories.RepositoryDTO[K], err error) {
 	if len(*o.repositories) < o.worksSize {
 		return res, errors.New("Internal error: Not enough repositories")
 	}
 	randomRepositories := helpers.NewRandomChannel(o.repositories)
 
 	var wg sync.WaitGroup
-	resultCh := make(chan map[string]*ports.RepositoryDTO[K], o.worksSize)
+	resultCh := make(chan map[string]*repositories.RepositoryDTO[K], o.worksSize)
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
 		go func() {
 			finished := false
 			for repository, ok := <-randomRepositories; ok; repository, ok = <-randomRepositories {
-				res, err := worker.work(repository)
+				//res, err := worker.work(repository)
+				res, err := multipleOperation(repository)
 				if err == nil {
 					resultCh <- res
 					finished = true
@@ -92,12 +96,12 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
 		return res, errors.New("Internal error: Not enough successful workers")
 	}
 
-	valueCountMap := map[string]valueCount[*ports.RepositoryDTO[K]]{}
+	valueCountMap := map[string]valueCount[*repositories.RepositoryDTO[K]]{}
 	for resultMap := range resultCh {
 		for key, newValue := range resultMap {
 			curr, ok := valueCountMap[key]
 			if !ok {
-				curr = valueCount[*ports.RepositoryDTO[K]]{
+				curr = valueCount[*repositories.RepositoryDTO[K]]{
 					Value: newValue,
 					Count: 0,
 				}
@@ -109,7 +113,7 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
 		}
 	}
 
-	ans := map[string]*ports.RepositoryDTO[K]{}
+	ans := map[string]*repositories.RepositoryDTO[K]{}
 	for key, valueCount := range valueCountMap {
 		if valueCount.Count == o.worksSize {
 			ans[key] = valueCount.Value
