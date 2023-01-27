@@ -6,12 +6,12 @@ import (
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
-func NewPostOperation(hash string) func(*shorten_bulk.ShortenBulkRepository) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
+func NewPostOperation(hash string, dto repositories.RepositoryDTO[entities.ShortenBulkEntity]) func(*shorten_bulk.ShortenBulkRepository) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
 	return func(repository *shorten_bulk.ShortenBulkRepository) (
 		*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 		error,
 	) {
-		err := (*repository).Post(hash)
+		err := (*repository).Post(hash, dto)
 		return nil, err
 	}
 }

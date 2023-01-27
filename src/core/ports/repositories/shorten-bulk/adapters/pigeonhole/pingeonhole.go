@@ -1,45 +1,46 @@
 package adapters
 
 import (
-	domain "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers/pigeonhole-orchestrator"
 	operations "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole/operations"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
+	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
 type PigeonholeShortenBulkRepository struct {
-	orchestrator *helpers.PigeonholeOrchestrator[shorten_bulk.ShortenBulkRepository, domain.ShortenBulkEntity]
+	orchestrator *helpers.PigeonholeOrchestrator[shorten_bulk.ShortenBulkRepository, entities.ShortenBulkEntity]
 }
 
-func (p *PigeonholeShortenBulkRepository) Get(hash string) (*domain.ShortenBulkEntity, error) {
+func (p *PigeonholeShortenBulkRepository) Get(hash string) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
 	operation := operations.NewGetOperation(hash)
 	res, err := p.orchestrator.ExecuteSingleOperation(operation)
 	if err != nil {
 		return nil, err
 	}
 
-	return res.Entity, nil
+	return res, nil
 }
 
-func (p *PigeonholeShortenBulkRepository) GetOldest(size uint) (map[string]*domain.ShortenBulkEntity, error) {
+func (p *PigeonholeShortenBulkRepository) GetOldests(size uint) (map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
 	operation := operations.NewGetOldestsOperation(size)
 	res, err := p.orchestrator.ExecuteMultipleOperation(operation)
 	if err != nil {
 		return nil, err
 	}
 
-	ans := map[string]*domain.ShortenBulkEntity{}
+	ans := map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity]{}
 	for key, value := range res {
-		ans[key] = value.Entity
+		ans[key] = value
 	}
 
 	return ans, nil
 }
 
-func (p *PigeonholeShortenBulkRepository) Post(hash string) error {
-	operation := operations.NewPostOperation(hash)
+func (p *PigeonholeShortenBulkRepository) Post(hash string, dto repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
+	operation := operations.NewPostOperation(hash, dto)
 	_, err := p.orchestrator.ExecuteSingleOperation(operation)
+
 	return err
 }
 
@@ -50,7 +51,7 @@ func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string) error {
 }
 
 func NewPigeonholeShortenBulkRepository(repos *[]*shorten_bulk.ShortenBulkRepository) (
-	*PigeonholeShortenBulkRepository,
+	shorten_bulk.ShortenBulkRepository,
 	error,
 ) {
 	orchestrator, err := helpers.NewPigeonholeOrchestrator[shorten_bulk.ShortenBulkRepository, entities.ShortenBulkEntity](repos)

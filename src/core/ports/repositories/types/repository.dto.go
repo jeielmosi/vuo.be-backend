@@ -2,8 +2,6 @@ package repositories
 
 import (
 	"time"
-
-	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
 )
 
 type RepositoryDTO[T any] struct {
@@ -57,8 +55,22 @@ func (lhs *RepositoryDTO[T]) IsOlderThan(rhs *RepositoryDTO[T]) bool {
 
 func NewRepositoryDTO[T any](
 	entity *T,
-	lockedAt *string,
-	updatedAt string,
+	updatedAt time.Time,
+	lockedAt *time.Time,
+) *RepositoryDTO[T] {
+
+	return &RepositoryDTO[T]{
+		Entity:    entity,
+		LockedAt:  lockedAt,
+		UpdatedAt: updatedAt,
+	}
+}
+
+/*
+func NewRepositoryDTO[T any](
+	entity *T,
+	lockedAt *time.Time,
+	updatedAt *time.Time,
 ) (*RepositoryDTO[T], error) {
 
 	lockedAtTime, err := helpers.NewTimeFrom10NanosecondsString(lockedAt)
@@ -77,3 +89,4 @@ func NewRepositoryDTO[T any](
 		UpdatedAt: *updatedAtTime,
 	}, nil
 }
+*/

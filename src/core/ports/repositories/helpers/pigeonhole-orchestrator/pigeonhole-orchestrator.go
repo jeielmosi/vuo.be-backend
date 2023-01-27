@@ -14,7 +14,6 @@ type PigeonholeOrchestrator[T any, K any] struct {
 }
 
 func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleOperation(
-	//worker SingleOperation[T, K],
 	singleOperation func(*T) (*repositories.RepositoryDTO[K], error),
 ) (*repositories.RepositoryDTO[K], error) {
 	if len(*o.repositories) < o.worksSize {
@@ -61,7 +60,6 @@ type valueCount[T any] struct {
 }
 
 func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
-	//worker MultipleOperation[T, K],
 	multipleOperation func(*T) (map[string]*repositories.RepositoryDTO[K], error),
 ) (res map[string]*repositories.RepositoryDTO[K], err error) {
 	if len(*o.repositories) < o.worksSize {
