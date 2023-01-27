@@ -43,39 +43,28 @@ func postAtNewHash(
 	return "", errors.New("Internal error: Not found empty hash")
 }
 
-type KeyValue struct {
-	Key   string
-	Value *repositories.RepositoryDTO[entities.ShortenBulkEntity]
-}
-
 func postAtOldHash(
 	repository *shorten_bulk.ShortenBulkRepository,
 	dto *repositories.RepositoryDTO[entities.ShortenBulkEntity],
 ) (string, error) {
 	const OLDESTS_SIZE uint = 101
 
-	oldests, err := (*repository).GetOldests(OLDESTS_SIZE)
+	mp, err := (*repository).GetOldests(OLDESTS_SIZE)
 	if err != nil {
 		return "", err
 	}
 
-	oldestsArray := make([]KeyValue, 0)
-	for key, val := range oldests {
-		oldestsArray = append(oldestsArray, KeyValue{
-			Key:   key,
-			Value: val,
-		})
-	}
+	arr := helpers.MapToSlice(mp)
 
-	for size := len(oldestsArray); size > 0; size-- {
+	for size := len(arr); size > 0; size-- {
 		idx := rand.Intn(size)
 		last := size - 1
 		if idx != last {
-			oldestsArray[idx], oldestsArray[last] = oldestsArray[last], oldestsArray[idx]
+			arr[idx], arr[last] = arr[last], arr[idx]
 		}
 
-		hash := oldestsArray[last].Key
-		dto := oldestsArray[last].Value
+		hash := arr[last].Key
+		dto := arr[last].Value
 
 		err := (*repository).Post(hash, *dto)
 		if err == nil {
@@ -83,7 +72,7 @@ func postAtOldHash(
 		}
 	}
 
-	return "", errors.New("Internal error: Not found empty hash")
+	return "", errors.New("Internal error: Hash not found")
 }
 
 func PostShortenBulkEntity(

@@ -54,11 +54,6 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleOperation(
 	return ans, nil
 }
 
-type valueCount[T any] struct {
-	Value T
-	Count int
-}
-
 func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
 	multipleOperation func(*T) (map[string]*repositories.RepositoryDTO[K], error),
 ) (res map[string]*repositories.RepositoryDTO[K], err error) {
@@ -94,31 +89,31 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
 		return res, errors.New("Internal error: Not enough successful workers")
 	}
 
-	valueCountMap := map[string]valueCount[*repositories.RepositoryDTO[K]]{}
+	countMap := map[string]int{}
+	valueMap := map[string]*repositories.RepositoryDTO[K]{}
 	for resultMap := range resultCh {
-		for key, newValue := range resultMap {
-			curr, ok := valueCountMap[key]
+		for key, aux := range resultMap {
+			value, ok := valueMap[key]
+			count := countMap[key]
 			if !ok {
-				curr = valueCount[*repositories.RepositoryDTO[K]]{
-					Value: newValue,
-					Count: 0,
-				}
-			} else if curr.Value.IsOlderThan(newValue) {
-				curr.Value = newValue
+				value = aux
+				count = 0
+			} else if value.IsOlderThan(aux) {
+				value = aux
 			}
-			curr.Count++
-			valueCountMap[key] = curr
+			count++
+			valueMap[key] = value
+			countMap[key] = count
 		}
 	}
 
-	ans := map[string]*repositories.RepositoryDTO[K]{}
-	for key, valueCount := range valueCountMap {
-		if valueCount.Count == o.worksSize {
-			ans[key] = valueCount.Value
+	for key, count := range countMap {
+		if count != o.worksSize {
+			delete(valueMap, key)
 		}
 	}
 
-	return ans, nil
+	return valueMap, nil
 }
 
 func NewPigeonholeOrchestrator[T any, K any](
