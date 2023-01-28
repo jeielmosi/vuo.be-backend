@@ -16,4 +16,4 @@
 
 #env files
 envs/*
-!envs/example/*
+!envs/example/
