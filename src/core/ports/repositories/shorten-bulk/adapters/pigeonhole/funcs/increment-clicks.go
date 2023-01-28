@@ -1,4 +1,4 @@
-package operations
+package funcs
 
 import (
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
@@ -6,12 +6,12 @@ import (
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
-func NewPostOperation(hash string, dto repositories.RepositoryDTO[entities.ShortenBulkEntity]) func(*shorten_bulk.ShortenBulkRepository) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
+func NewIncrementClicksFunc(hash string) func(*shorten_bulk.ShortenBulkRepository) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
 	return func(repository *shorten_bulk.ShortenBulkRepository) (
 		*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 		error,
 	) {
-		err := (*repository).Post(hash, dto)
+		err := (*repository).IncrementClicks(hash)
 		return nil, err
 	}
 }

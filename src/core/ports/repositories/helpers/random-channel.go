@@ -33,6 +33,7 @@ func NewRandomChannel[T any](
 		}
 		ch <- (*elements)[permutation[lastIndex]]
 	}
+	close(ch)
 
 	return ch
 }

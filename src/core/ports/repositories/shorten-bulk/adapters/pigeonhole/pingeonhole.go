@@ -3,7 +3,7 @@ package adapters
 import (
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers/pigeonhole-orchestrator"
-	operations "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole/operations"
+	funcs "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole/funcs"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
@@ -13,8 +13,8 @@ type PigeonholeShortenBulkRepository struct {
 }
 
 func (p *PigeonholeShortenBulkRepository) Get(hash string) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
-	operation := operations.NewGetOperation(hash)
-	res, err := p.orchestrator.ExecuteSingleOperation(operation)
+	fn := funcs.NewGetFunc(hash)
+	res, err := p.orchestrator.ExecuteSingleFunc(fn)
 	if err != nil {
 		return nil, err
 	}
@@ -23,8 +23,8 @@ func (p *PigeonholeShortenBulkRepository) Get(hash string) (*repositories.Reposi
 }
 
 func (p *PigeonholeShortenBulkRepository) GetOldests(size uint) (map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
-	operation := operations.NewGetOldestsOperation(size)
-	res, err := p.orchestrator.ExecuteMultipleOperation(operation)
+	fn := funcs.NewGetOldestsFunc(size)
+	res, err := p.orchestrator.ExecuteMultipleFunc(fn)
 	if err != nil {
 		return nil, err
 	}
@@ -38,15 +38,15 @@ func (p *PigeonholeShortenBulkRepository) GetOldests(size uint) (map[string]*rep
 }
 
 func (p *PigeonholeShortenBulkRepository) Post(hash string, dto repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
-	operation := operations.NewPostOperation(hash, dto)
-	_, err := p.orchestrator.ExecuteSingleOperation(operation)
+	fn := funcs.NewPostFunc(hash, dto)
+	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 
 	return err
 }
 
 func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string) error {
-	operation := operations.NewIncrementClicksOperation(hash)
-	_, err := p.orchestrator.ExecuteSingleOperation(operation)
+	fn := funcs.NewIncrementClicksFunc(hash)
+	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 	return err
 }
 

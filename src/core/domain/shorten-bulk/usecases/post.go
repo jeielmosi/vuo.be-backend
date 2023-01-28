@@ -6,38 +6,33 @@ import (
 	"time"
 
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
-	helpers "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk/helpers"
+	helpers "github.com/jei-el/vuo.be-backend/src/core/helpers"
+	random "github.com/jei-el/vuo.be-backend/src/core/helpers/random"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
-
-const RECOVERY_SIZE int = 5
-const HASH_SIZE uint = 7
 
 func postAtNewHash(
 	repository *shorten_bulk.ShortenBulkRepository,
 	dto *repositories.RepositoryDTO[entities.ShortenBulkEntity],
 ) (string, error) {
+
 	const TRY_SIZE int = 11
 
 	for i := 0; i < TRY_SIZE; i++ {
-		hash := helpers.NewRandomHash(HASH_SIZE)
+		hash := random.NewRandomHash(helpers.HASH_SIZE)
 
 		backup, err := (*repository).Get(hash)
-		if err != nil {
+		if err != nil || backup != nil {
 			continue
 		}
 
 		err = (*repository).Post(hash, *dto)
-		for r := 0; r < RECOVERY_SIZE; r++ {
-			if err == nil {
-				break
-			}
-			err = (*repository).Post(hash, *backup)
-		}
 		if err == nil {
 			return hash, nil
 		}
+
+		(*repository).Post(hash, *backup)
 	}
 
 	return "", errors.New("Internal error: Not found empty hash")
@@ -56,7 +51,7 @@ func postAtOldHash(
 
 	arr := helpers.MapToSlice(mp)
 
-	for size := len(arr); size > 0; size-- {
+	for size := len(mp); size > 0; size-- {
 		idx := rand.Intn(size)
 		last := size - 1
 		if idx != last {
@@ -66,10 +61,18 @@ func postAtOldHash(
 		hash := arr[last].Key
 		dto := arr[last].Value
 
-		err := (*repository).Post(hash, *dto)
+		backup, err := (*repository).Get(hash)
+		if err != nil {
+			continue
+		}
+		//TODO: verify by time
+
+		err = (*repository).Post(hash, *dto)
 		if err == nil {
 			return hash, nil
 		}
+
+		(*repository).Post(hash, *backup)
 	}
 
 	return "", errors.New("Internal error: Hash not found")

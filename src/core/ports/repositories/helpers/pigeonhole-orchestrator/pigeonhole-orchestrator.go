@@ -13,8 +13,8 @@ type PigeonholeOrchestrator[T any, K any] struct {
 	repositories *[]*T
 }
 
-func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleOperation(
-	singleOperation func(*T) (*repositories.RepositoryDTO[K], error),
+func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFunc(
+	singleFunc func(*T) (*repositories.RepositoryDTO[K], error),
 ) (*repositories.RepositoryDTO[K], error) {
 	if len(*o.repositories) < o.worksSize {
 		return nil, errors.New("Internal error: Not enough repositories")
@@ -27,8 +27,7 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleOperation(
 		wg.Add(1)
 		go func() {
 			for repository, ok := <-randomRepositories; ok; repository, ok = <-randomRepositories {
-				//res, err := worker.work(repository)
-				res, err := singleOperation(repository)
+				res, err := singleFunc(repository)
 				if err == nil {
 					resultCh <- res
 					break
@@ -38,24 +37,43 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleOperation(
 		}()
 	}
 	wg.Wait()
+	close(resultCh)
 
 	if len(resultCh) != o.worksSize {
 		return nil, errors.New("Internal error: Not enough successful workers")
 	}
 
-	ans := <-resultCh
+	valMp := map[string]*repositories.RepositoryDTO[K]{}
+	countMp := map[string]int{}
 	for result := range resultCh {
-		if ans.IsOlderThan(result) {
-			ans = result
+		timestamp := helpers.TimeTo10NanosecondsString(result.UpdatedAt)
+
+		val, ok := valMp[timestamp]
+		count := countMp[timestamp]
+		if !ok {
+			val = result
+			count = 0
+		}
+
+		valMp[timestamp] = val
+		countMp[timestamp] = count + 1
+	}
+
+	bestTimestamp := ""
+	bestCount := 0
+	for timestamp, count := range countMp {
+		if (bestCount < count) || (bestCount == count && bestTimestamp < timestamp) {
+			bestCount = count
+			bestTimestamp = timestamp
 		}
 	}
-	close(resultCh)
 
-	return ans, nil
+	return valMp[bestTimestamp], nil
 }
 
-func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
-	multipleOperation func(*T) (map[string]*repositories.RepositoryDTO[K], error),
+// TODO: update by count and timestamp like ExecuteSingleFunc
+func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFunc(
+	multipleFunc func(*T) (map[string]*repositories.RepositoryDTO[K], error),
 ) (res map[string]*repositories.RepositoryDTO[K], err error) {
 	if len(*o.repositories) < o.worksSize {
 		return res, errors.New("Internal error: Not enough repositories")
@@ -67,18 +85,12 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
 		go func() {
-			finished := false
 			for repository, ok := <-randomRepositories; ok; repository, ok = <-randomRepositories {
-				//res, err := worker.work(repository)
-				res, err := multipleOperation(repository)
+				res, err := multipleFunc(repository)
 				if err == nil {
 					resultCh <- res
-					finished = true
 					break
 				}
-			}
-			if !finished {
-				//use context
 			}
 			wg.Done()
 		}()
@@ -89,31 +101,47 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleOperation(
 		return res, errors.New("Internal error: Not enough successful workers")
 	}
 
-	countMap := map[string]int{}
-	valueMap := map[string]*repositories.RepositoryDTO[K]{}
-	for resultMap := range resultCh {
-		for key, aux := range resultMap {
-			value, ok := valueMap[key]
-			count := countMap[key]
+	valMp := map[string]map[string]*repositories.RepositoryDTO[K]{}
+	countMp := map[string]map[string]int{}
+	for mp := range resultCh {
+		for hash, dto := range mp {
+			_, ok := valMp[hash]
 			if !ok {
-				value = aux
-				count = 0
-			} else if value.IsOlderThan(aux) {
-				value = aux
+				valMp[hash] = map[string]*repositories.RepositoryDTO[K]{}
+				countMp[hash] = map[string]int{}
 			}
-			count++
-			valueMap[key] = value
-			countMap[key] = count
+			timestamp := helpers.TimeTo10NanosecondsString(dto.UpdatedAt)
+
+			val, ok := valMp[hash][timestamp]
+			count := countMp[hash][timestamp]
+			if !ok {
+				val = dto
+				count = 0
+			}
+
+			valMp[hash][timestamp] = val
+			countMp[hash][timestamp] = count + 1
 		}
 	}
 
-	for key, count := range countMap {
-		if count != o.worksSize {
-			delete(valueMap, key)
+	ansMp := map[string]*repositories.RepositoryDTO[K]{}
+	for hash, mp := range countMp {
+		countSum := 0
+		bestTimestamp := ""
+		bestCount := 0
+		for timestamp, count := range mp {
+			if (bestCount < count) || (bestCount == count && bestTimestamp < timestamp) {
+				bestCount = count
+				bestTimestamp = timestamp
+			}
+			countSum += count
+		}
+		if countSum <= o.worksSize {
+			ansMp[hash] = valMp[hash][bestTimestamp]
 		}
 	}
 
-	return valueMap, nil
+	return ansMp, nil
 }
 
 func NewPigeonholeOrchestrator[T any, K any](
