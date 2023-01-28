@@ -48,14 +48,11 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFunc(
 	for result := range resultCh {
 		timestamp := helpers.TimeTo10NanosecondsString(result.UpdatedAt)
 
-		val, ok := valMp[timestamp]
-		count := countMp[timestamp]
+		count, ok := countMp[timestamp]
 		if !ok {
-			val = result
+			valMp[timestamp] = result
 			count = 0
 		}
-
-		valMp[timestamp] = val
 		countMp[timestamp] = count + 1
 	}
 
@@ -112,14 +109,11 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFunc(
 			}
 			timestamp := helpers.TimeTo10NanosecondsString(dto.UpdatedAt)
 
-			val, ok := valMp[hash][timestamp]
-			count := countMp[hash][timestamp]
+			count, _ := countMp[hash][timestamp]
 			if !ok {
-				val = dto
+				valMp[hash][timestamp] = dto
 				count = 0
 			}
-
-			valMp[hash][timestamp] = val
 			countMp[hash][timestamp] = count + 1
 		}
 	}
