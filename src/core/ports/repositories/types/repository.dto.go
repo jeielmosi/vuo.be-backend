@@ -14,45 +14,6 @@ func (r *RepositoryDTO[T]) IsLocked() bool {
 	return r.LockedAt != nil
 }
 
-func (lhs *RepositoryDTO[T]) IsOlderThan(rhs *RepositoryDTO[T]) bool {
-
-	if (lhs == nil) && (rhs == nil) {
-		return false
-	}
-	if (lhs == nil) != (rhs == nil) {
-		if lhs == nil {
-			return true
-		}
-		return false
-	}
-
-	if lhs.UpdatedAt.Before(rhs.UpdatedAt) {
-		return true
-	}
-	if lhs.UpdatedAt.After(rhs.UpdatedAt) {
-		return false
-	}
-
-	if !lhs.IsLocked() && !rhs.IsLocked() {
-		return false
-	}
-	if lhs.IsLocked() != rhs.IsLocked() {
-		if lhs.IsLocked() {
-			return true
-		}
-		return false
-	}
-
-	if lhs.LockedAt.Before(*rhs.LockedAt) {
-		return true
-	}
-	if lhs.LockedAt.After(*rhs.LockedAt) {
-		return false
-	}
-
-	return false
-}
-
 func NewRepositoryDTO[T any](
 	entity *T,
 	updatedAt time.Time,
