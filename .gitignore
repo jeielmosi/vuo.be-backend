@@ -17,3 +17,4 @@
 #env files
 envs/*
 !envs/example/
+!envs/current.env
