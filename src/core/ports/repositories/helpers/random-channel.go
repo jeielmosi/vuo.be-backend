@@ -3,7 +3,8 @@ package helpers
 import (
 	"math/rand"
 	"sync"
-	"time"
+
+	random "github.com/jei-el/vuo.be-backend/src/core/helpers/random"
 )
 
 var once sync.Once
@@ -11,11 +12,7 @@ var once sync.Once
 func NewRandomChannel[T any](
 	elements *[]T,
 ) <-chan T {
-	once.Do(
-		func() {
-			rand.Seed(time.Now().UTC().UnixNano())
-		},
-	)
+	random.SeedOnce()
 
 	size := len(*elements)
 	permutation := make([]int, size)
