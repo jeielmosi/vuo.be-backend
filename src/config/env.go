@@ -20,11 +20,16 @@ func getEnvsPath() string {
 	return envsPath
 }
 
-func LoadEnv(envName string) {
+func GetFirebasePath(envName string) string {
 	envsPath := getEnvsPath()
 	envPath := filepath.Join(envsPath, envName)
-
 	firebasePath := filepath.Join(envPath, "firebase.json")
+
+	return firebasePath
+}
+
+func LoadEnv(envName string) {
+	firebasePath := GetFirebasePath(envName)
 	err := os.Setenv("FIREBASE_PATH", firebasePath)
 	if err != nil {
 		log.Fatalf("Error setting firebase path file")
@@ -33,7 +38,7 @@ func LoadEnv(envName string) {
 }
 
 func GetEnv() string {
-	return os.Getenv("ENV_NAME")
+	return os.Getenv("CURRENT_ENV")
 }
 
 var once sync.Once
