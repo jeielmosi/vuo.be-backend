@@ -10,4 +10,6 @@ type ShortenBulkRepository interface {
 	GetOldests(size uint) (map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity], error)
 	Post(hash string, shorten_bulk repositories.RepositoryDTO[entities.ShortenBulkEntity]) error
 	IncrementClicks(hash string) error
+	Lock(hash string) error
+	Unlock(hash string) error
 }

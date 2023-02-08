@@ -1,8 +1,6 @@
 package helpers
 
-import (
-	helpers "github.com/jei-el/vuo.be-backend/src/core/helpers/types"
-)
+import helpers "github.com/jei-el/vuo.be-backend/src/core/helpers/types"
 
 func MapToSlice[T any](mp map[string]T) []helpers.KeyValue[T] {
 	size := len(mp)

@@ -2,16 +2,13 @@ package helpers
 
 import (
 	"math/rand"
-	"sync"
 
 	random "github.com/jei-el/vuo.be-backend/src/core/helpers/random"
 )
 
-var once sync.Once
-
-func NewRandomChannel[T any](
+func NewRandChIdxs[T any](
 	elements *[]T,
-) <-chan T {
+) <-chan int {
 	random.SeedOnce()
 
 	size := len(*elements)
@@ -20,7 +17,7 @@ func NewRandomChannel[T any](
 		permutation[i] = i
 	}
 
-	ch := make(chan T, size)
+	ch := make(chan int, size)
 	for ; size > 0; size-- {
 		randomIndex := rand.Intn(size)
 		lastIndex := size - 1
@@ -28,7 +25,7 @@ func NewRandomChannel[T any](
 			permutation[randomIndex], permutation[lastIndex] =
 				permutation[lastIndex], permutation[randomIndex]
 		}
-		ch <- (*elements)[permutation[lastIndex]]
+		ch <- permutation[lastIndex]
 	}
 	close(ch)
 
