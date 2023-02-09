@@ -30,7 +30,7 @@ func GetFirebasePath(envName string) string {
 
 func LoadEnv(envName string) {
 	firebasePath := GetFirebasePath(envName)
-	err := os.Setenv("FIREBASE_PATH", firebasePath)
+	err := os.Setenv(envName+"_FIREBASE_PATH", firebasePath)
 	if err != nil {
 		log.Fatalf("Error setting firebase path file")
 		os.Exit(1)

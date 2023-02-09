@@ -19,7 +19,7 @@ func (p *PigeonholeShortenBulkRepository) Get(hash string) (
 	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
-	fn := funcs.NewGetFunc(hash)
+	fn := funcs.NewGetFn(hash)
 	dto, err, _ := p.orchestrator.ExecuteSingleFn(fn)
 	return dto, err
 }
@@ -28,7 +28,7 @@ func (p *PigeonholeShortenBulkRepository) GetOldests(size uint) (
 	map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
-	fn := funcs.NewGetOldestsFunc(size)
+	fn := funcs.NewGetOldestsFn(size)
 	res, err, _ := p.orchestrator.ExecuteMultipleFn(fn)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func (p *PigeonholeShortenBulkRepository) Post(
 	error,
 	<-chan int,
 ) {
-	fn := funcs.NewPostFunc(hash, dto)
+	fn := funcs.NewPostFn(hash, dto)
 	_, err, resCh := p.orchestrator.ExecuteSingleFn(fn)
 
 	return err, resCh
@@ -63,7 +63,7 @@ func (p *PigeonholeShortenBulkRepository) UndoPost(
 	error,
 	<-chan int,
 ) {
-	fn := funcs.NewPostFunc(hash, dto)
+	fn := funcs.NewPostFn(hash, dto)
 	idxCh1 := make(chan int, len(idxsCh))
 	addMp := map[int]bool{}
 
@@ -92,7 +92,25 @@ func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string) (
 	error,
 	<-chan int,
 ) {
-	fn := funcs.NewIncrementClicksFunc(hash)
+	fn := funcs.NewIncrementClicksFn(hash)
+	_, err, resCh := p.orchestrator.ExecuteSingleFn(fn)
+	return err, resCh
+}
+
+func (p *PigeonholeShortenBulkRepository) Lock(hash string) (
+	error,
+	<-chan int,
+) {
+	fn := funcs.NewLockFn(hash)
+	_, err, resCh := p.orchestrator.ExecuteSingleFn(fn)
+	return err, resCh
+}
+
+func (p *PigeonholeShortenBulkRepository) Unlock(hash string) (
+	error,
+	<-chan int,
+) {
+	fn := funcs.NewUnlockFn(hash)
 	_, err, resCh := p.orchestrator.ExecuteSingleFn(fn)
 	return err, resCh
 }

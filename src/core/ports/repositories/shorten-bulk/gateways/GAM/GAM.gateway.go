@@ -32,23 +32,32 @@ func (g *GAMShortenBulkGateway) Get(hash string) (*entities.ShortenBulkEntity, e
 	return res.Entity, nil
 }
 
+// TODO: verify errors and creation of RepositoryDTO
+func (g *GAMShortenBulkGateway) post(hash string, dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
+	err, resCh := g.pingeonhole.Lock(hash)
+	defer g.pingeonhole.Unlock(hash)
+
+	backup, err := g.pingeonhole.Get(hash)
+	if err != nil {
+		return err
+	}
+
+	err, resCh = g.pingeonhole.UndoPost(hash, *dto, resCh)
+	if err == nil {
+		return err
+	}
+
+	err, _ = g.pingeonhole.UndoPost(hash, *backup, resCh)
+
+	return err
+}
+
 func (g *GAMShortenBulkGateway) postAtNewHash(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) (string, error) {
 	const TRY_SIZE int = 11
 
 	for t := 0; t < TRY_SIZE; t++ {
 		hash := random.NewRandomHash(helpers.HASH_SIZE)
-
-		backup, err := g.pingeonhole.Get(hash)
-		if err != nil || backup != nil {
-			continue
-		}
-
-		err, resCh := g.pingeonhole.Post(hash, *dto)
-		if err == nil {
-			return hash, nil
-		}
-
-		g.pingeonhole.UndoPost(hash, *backup, resCh)
+		g.post(hash, dto)
 	}
 
 	return "", errors.New("Internal error: Not found empty hash")
@@ -76,17 +85,7 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 		hash := arr[last].Key
 		dto := arr[last].Value
 
-		backup, err := g.pingeonhole.Get(hash)
-		if err != nil {
-			continue
-		}
-
-		err, resCh := g.pingeonhole.Post(hash, *dto)
-		if err == nil {
-			return hash, nil
-		}
-
-		g.pingeonhole.UndoPost(hash, *backup, resCh)
+		g.post(hash, dto)
 	}
 
 	return "", errors.New("Internal error: Hash not found")
