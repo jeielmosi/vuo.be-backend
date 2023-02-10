@@ -8,7 +8,9 @@ import (
 	"google.golang.org/api/option"
 )
 
-func GetApp(envName string) (*firebase.App, error) {
+func getApp(envName string) (*firebase.App, error) {
+	ctx := context.Background()
 	opt := option.WithCredentialsFile(os.Getenv(envName + "_FIREBASE_PATH"))
-	return firebase.NewApp(context.Background(), nil, opt)
+
+	return firebase.NewApp(ctx, nil, opt)
 }

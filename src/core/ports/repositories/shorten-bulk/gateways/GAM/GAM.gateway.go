@@ -15,16 +15,16 @@ import (
 )
 
 type GAMShortenBulkGateway struct {
-	pingeonhole shorten_bulk.ShortenBulkRepository
+	repository shorten_bulk.ShortenBulkRepository
 }
 
 func (g *GAMShortenBulkGateway) Get(hash string) (*entities.ShortenBulkEntity, error) {
-	res, err := g.pingeonhole.Get(hash)
+	res, err := g.repository.Get(hash)
 	if err != nil {
 		return res.Entity, err
 	}
 
-	err = g.pingeonhole.IncrementClicks(hash)
+	err = g.repository.IncrementClicks(hash)
 	if err != nil {
 		return res.Entity, errors.New("Error at count access processing")
 	}
@@ -37,13 +37,13 @@ func (g *GAMShortenBulkGateway) post(
 	shortenBulk *entities.ShortenBulkEntity,
 	stopFn func(*repositories.RepositoryDTO[entities.ShortenBulkEntity]) error,
 ) error {
-	err := g.pingeonhole.Lock(hash)
+	err := g.repository.Lock(hash)
 	if err != nil {
 		return err
 	}
-	defer g.pingeonhole.Unlock(hash)
+	defer g.repository.Unlock(hash)
 
-	backup, err := g.pingeonhole.Get(hash)
+	backup, err := g.repository.Get(hash)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (g *GAMShortenBulkGateway) post(
 	}
 
 	dto := repositories.NewRepositoryDTO(shortenBulk, true)
-	return g.pingeonhole.Post(hash, *dto)
+	return g.repository.Post(hash, *dto)
 }
 
 func (g *GAMShortenBulkGateway) postAtNewHash(shortenBulk *entities.ShortenBulkEntity) (string, error) {
@@ -83,7 +83,7 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 ) (string, error) {
 	const OLDESTS_SIZE uint = 101
 
-	mp, err := g.pingeonhole.GetOldests(OLDESTS_SIZE)
+	mp, err := g.repository.GetOldests(OLDESTS_SIZE)
 	if err != nil {
 		return "", err
 	}
@@ -152,6 +152,6 @@ func NewGAMShortenBulkGateway() (shorten_bulk_gateway.ShortenBulkGateway, error)
 	}
 
 	return &GAMShortenBulkGateway{
-		pigeonhole,
+		repository: pigeonhole,
 	}, nil
 }
