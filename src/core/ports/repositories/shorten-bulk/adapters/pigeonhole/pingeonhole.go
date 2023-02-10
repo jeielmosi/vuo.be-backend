@@ -3,7 +3,7 @@ package pigeonhole_shorten_bulk
 import (
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers/pigeonhole-orchestrator"
-	funcs "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/helpers/pigeonhole/funcs"
+	funcs "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole/funcs"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
@@ -20,8 +20,7 @@ func (p *PigeonholeShortenBulkRepository) Get(hash string) (
 	error,
 ) {
 	fn := funcs.NewGetFn(hash)
-	dto, err, _ := p.orchestrator.ExecuteSingleFn(fn)
-	return dto, err
+	return p.orchestrator.ExecuteSingleFn(fn)
 }
 
 func (p *PigeonholeShortenBulkRepository) GetOldests(size uint) (
@@ -29,7 +28,7 @@ func (p *PigeonholeShortenBulkRepository) GetOldests(size uint) (
 	error,
 ) {
 	fn := funcs.NewGetOldestsFn(size)
-	res, err, _ := p.orchestrator.ExecuteMultipleFn(fn)
+	res, err := p.orchestrator.ExecuteMultipleFn(fn)
 	if err != nil {
 		return nil, err
 	}
@@ -45,78 +44,33 @@ func (p *PigeonholeShortenBulkRepository) GetOldests(size uint) (
 func (p *PigeonholeShortenBulkRepository) Post(
 	hash string,
 	dto repositories.RepositoryDTO[entities.ShortenBulkEntity],
-) (
-	error,
-	<-chan int,
-) {
+) error {
 	fn := funcs.NewPostFn(hash, dto)
-	_, err, resCh := p.orchestrator.ExecuteSingleFn(fn)
+	_, err := p.orchestrator.ExecuteSingleFn(fn)
 
-	return err, resCh
+	return err
 }
 
-func (p *PigeonholeShortenBulkRepository) UndoPost(
-	hash string,
-	dto repositories.RepositoryDTO[entities.ShortenBulkEntity],
-	idxsCh <-chan int,
-) (
-	error,
-	<-chan int,
-) {
-	fn := funcs.NewPostFn(hash, dto)
-	idxCh1 := make(chan int, len(idxsCh))
-	addMp := map[int]bool{}
-
-	for idx := range idxsCh {
-		addMp[idx] = true
-	}
-	_, err, resCh := p.orchestrator.ExecuteSingleFnWithCh(fn, idxCh1)
-
-	size := len(addMp) - len(resCh)
-	for idx := range resCh {
-		addMp[idx] = false
-	}
-
-	errCh := make(chan int, size)
-	for idx, add := range addMp {
-		if add {
-			errCh <- idx
-		}
-	}
-	close(errCh)
-
-	return err, errCh
-}
-
-func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string) (
-	error,
-	<-chan int,
-) {
+func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string) error {
 	fn := funcs.NewIncrementClicksFn(hash)
-	_, err, resCh := p.orchestrator.ExecuteSingleFn(fn)
-	return err, resCh
+	_, err := p.orchestrator.ExecuteSingleFn(fn)
+	return err
 }
 
-func (p *PigeonholeShortenBulkRepository) Lock(hash string) (
-	error,
-	<-chan int,
-) {
+func (p *PigeonholeShortenBulkRepository) Lock(hash string) error {
 	fn := funcs.NewLockFn(hash)
-	_, err, resCh := p.orchestrator.ExecuteSingleFn(fn)
-	return err, resCh
+	_, err := p.orchestrator.ExecuteSingleFn(fn)
+	return err
 }
 
-func (p *PigeonholeShortenBulkRepository) Unlock(hash string) (
-	error,
-	<-chan int,
-) {
+func (p *PigeonholeShortenBulkRepository) Unlock(hash string) error {
 	fn := funcs.NewUnlockFn(hash)
-	_, err, resCh := p.orchestrator.ExecuteSingleFn(fn)
-	return err, resCh
+	_, err := p.orchestrator.ExecuteSingleFn(fn)
+	return err
 }
 
 func NewPigeonholeShortenBulkRepository(repos *[]*shorten_bulk.ShortenBulkRepository) (
-	*PigeonholeShortenBulkRepository,
+	shorten_bulk.ShortenBulkRepository,
 	error,
 ) {
 	orchestrator, err := helpers.NewPigeonholeOrchestrator[shorten_bulk.ShortenBulkRepository, entities.ShortenBulkEntity](repos)

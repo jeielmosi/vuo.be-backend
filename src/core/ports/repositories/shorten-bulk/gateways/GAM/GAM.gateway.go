@@ -3,19 +3,19 @@ package GAM
 import (
 	"errors"
 	"math/rand"
-	"time"
 
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	helpers "github.com/jei-el/vuo.be-backend/src/core/helpers"
 	random "github.com/jei-el/vuo.be-backend/src/core/helpers/random"
+	repository_helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
+	pigeonhole_shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole"
 	shorten_bulk_gateway "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/gateways/interfaces"
-	pigeonhole_shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/helpers/pigeonhole"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
 type GAMShortenBulkGateway struct {
-	pingeonhole *pigeonhole_shorten_bulk.PigeonholeShortenBulkRepository
+	pingeonhole shorten_bulk.ShortenBulkRepository
 }
 
 func (g *GAMShortenBulkGateway) Get(hash string) (*entities.ShortenBulkEntity, error) {
@@ -24,7 +24,7 @@ func (g *GAMShortenBulkGateway) Get(hash string) (*entities.ShortenBulkEntity, e
 		return res.Entity, err
 	}
 
-	err, _ = g.pingeonhole.IncrementClicks(hash)
+	err = g.pingeonhole.IncrementClicks(hash)
 	if err != nil {
 		return res.Entity, errors.New("Error at count access processing")
 	}
@@ -32,9 +32,15 @@ func (g *GAMShortenBulkGateway) Get(hash string) (*entities.ShortenBulkEntity, e
 	return res.Entity, nil
 }
 
-// TODO: verify errors and creation of RepositoryDTO
-func (g *GAMShortenBulkGateway) post(hash string, dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
-	err, resCh := g.pingeonhole.Lock(hash)
+func (g *GAMShortenBulkGateway) post(
+	hash string,
+	shortenBulk *entities.ShortenBulkEntity,
+	stopFn func(*repositories.RepositoryDTO[entities.ShortenBulkEntity]) error,
+) error {
+	err := g.pingeonhole.Lock(hash)
+	if err != nil {
+		return err
+	}
 	defer g.pingeonhole.Unlock(hash)
 
 	backup, err := g.pingeonhole.Get(hash)
@@ -42,29 +48,38 @@ func (g *GAMShortenBulkGateway) post(hash string, dto *repositories.RepositoryDT
 		return err
 	}
 
-	err, resCh = g.pingeonhole.UndoPost(hash, *dto, resCh)
-	if err == nil {
+	err = stopFn(backup)
+	if err != nil {
 		return err
 	}
 
-	err, _ = g.pingeonhole.UndoPost(hash, *backup, resCh)
-
-	return err
+	dto := repositories.NewRepositoryDTO(shortenBulk, true)
+	return g.pingeonhole.Post(hash, *dto)
 }
 
-func (g *GAMShortenBulkGateway) postAtNewHash(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) (string, error) {
+func (g *GAMShortenBulkGateway) postAtNewHash(shortenBulk *entities.ShortenBulkEntity) (string, error) {
 	const TRY_SIZE int = 11
+
+	stopFn := func(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
+		if dto != nil {
+			return errors.New("Hash: is used")
+		}
+		return nil
+	}
 
 	for t := 0; t < TRY_SIZE; t++ {
 		hash := random.NewRandomHash(helpers.HASH_SIZE)
-		g.post(hash, dto)
+		err := g.post(hash, shortenBulk, stopFn)
+		if err == nil {
+			return hash, err
+		}
 	}
 
 	return "", errors.New("Internal error: Not found empty hash")
 }
 
 func (g *GAMShortenBulkGateway) postAtOldHash(
-	dto *repositories.RepositoryDTO[entities.ShortenBulkEntity],
+	shortenBulk *entities.ShortenBulkEntity,
 ) (string, error) {
 	const OLDESTS_SIZE uint = 101
 
@@ -73,34 +88,58 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 		return "", err
 	}
 
-	arr := helpers.MapToSlice(mp)
+	keys := helpers.GetKeys(mp)
+
+	lastTimestamp := ""
+	for _, key := range keys {
+		timestamp := repository_helpers.TimeTo10NanosecondsString(mp[key].CreatedAt)
+		if lastTimestamp < timestamp {
+			lastTimestamp = timestamp
+		}
+	}
+
+	stopFn := func(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
+		if dto == nil {
+			return nil
+		}
+
+		if dto.Locked {
+			return errors.New("Locked hash")
+		}
+
+		timestamp := repository_helpers.TimeTo10NanosecondsString(dto.CreatedAt)
+		if timestamp > lastTimestamp {
+			return errors.New("Element is not old")
+		}
+		return nil
+	}
 
 	for size := len(mp); size > 0; size-- {
 		idx := rand.Intn(size)
 		last := size - 1
 		if idx != last {
-			arr[idx], arr[last] = arr[last], arr[idx]
+			keys[idx], keys[last] = keys[last], keys[idx]
 		}
 
-		hash := arr[last].Key
-		dto := arr[last].Value
+		hash := keys[last]
+		dto := mp[hash]
 
-		g.post(hash, dto)
+		err = g.post(hash, dto.Entity, stopFn)
+		if err == nil {
+			return hash, err
+		}
 	}
 
 	return "", errors.New("Internal error: Hash not found")
 }
 
-func (g *GAMShortenBulkGateway) Post(entity entities.ShortenBulkEntity) (string, error) {
-	now := time.Now()
-	dto := repositories.NewRepositoryDTO(&entity, now, nil)
-
-	res, err := g.postAtNewHash(dto)
+func (g *GAMShortenBulkGateway) Post(shortenBulk entities.ShortenBulkEntity) (string, error) {
+	res, err := g.postAtNewHash(&shortenBulk)
 	if err == nil {
 		return res, err
 	}
 
-	return g.postAtOldHash(dto)
+	return g.postAtOldHash(&shortenBulk)
 }
 
 func NewGAMShortenBulkGateway() (shorten_bulk_gateway.ShortenBulkGateway, error) {

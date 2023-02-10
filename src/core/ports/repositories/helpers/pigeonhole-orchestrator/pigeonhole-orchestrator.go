@@ -1,4 +1,4 @@
-package helpers
+package repository_helpers
 
 import (
 	"errors"
@@ -13,19 +13,17 @@ type PigeonholeOrchestrator[T any, K any] struct {
 	repositories *[]*T
 }
 
-func (o *PigeonholeOrchestrator[T, K]) executeSingleFnWithCh(
+func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFn(
 	singleFn func(*T) (*repositories.RepositoryDTO[K], error),
-	idxsCh <-chan int,
-	worksSize int,
-) (*repositories.RepositoryDTO[K], error, <-chan int) {
-	if len(idxsCh) < worksSize {
-		return nil, errors.New("Internal error: Not enough repositories"), nil
+) (*repositories.RepositoryDTO[K], error) {
+	idxsCh := helpers.NewRandChIdxs(o.repositories)
+
+	if len(idxsCh) < o.worksSize {
+		return nil, errors.New("Internal error: Not enough repositories")
 	}
 
 	var wg sync.WaitGroup
 	resCh := make(chan *repositories.RepositoryDTO[K], o.worksSize)
-	resIdxsCh := make(chan int, o.worksSize)
-	defer close(resIdxsCh)
 
 	for w := 0; w < o.worksSize; w++ {
 		wg.Add(1)
@@ -35,7 +33,6 @@ func (o *PigeonholeOrchestrator[T, K]) executeSingleFnWithCh(
 				res, err := singleFn(repo)
 				if err == nil {
 					resCh <- res
-					resIdxsCh <- idx
 					break
 				}
 			}
@@ -46,7 +43,7 @@ func (o *PigeonholeOrchestrator[T, K]) executeSingleFnWithCh(
 	close(resCh)
 
 	if len(resCh) != o.worksSize {
-		return nil, errors.New("Internal error: Not enough successful workers"), resIdxsCh
+		return nil, errors.New("Internal error: Not enough successful workers")
 	}
 
 	valMp := map[string]*repositories.RepositoryDTO[K]{}
@@ -71,34 +68,17 @@ func (o *PigeonholeOrchestrator[T, K]) executeSingleFnWithCh(
 		}
 	}
 
-	return valMp[bestTimestamp], nil, resIdxsCh
+	return valMp[bestTimestamp], nil
 }
 
-func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFnWithCh(
-	singleFn func(*T) (*repositories.RepositoryDTO[K], error),
-	idxsCh <-chan int,
-) (*repositories.RepositoryDTO[K], error, <-chan int) {
-	return o.executeSingleFnWithCh(singleFn, idxsCh, len(idxsCh))
-}
-
-func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFn(
-	singleFn func(*T) (*repositories.RepositoryDTO[K], error),
-) (*repositories.RepositoryDTO[K], error, <-chan int) {
-	idxsCh := helpers.NewRandChIdxs(o.repositories)
-	return o.ExecuteSingleFnWithCh(singleFn, idxsCh)
-}
-
-func (o *PigeonholeOrchestrator[T, K]) executeMultipleFnWithCh(
+func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFn(
 	multipleFn func(*T) (map[string]*repositories.RepositoryDTO[K], error),
-	idxsCh <-chan int,
-	worksSize int,
-) (map[string]*repositories.RepositoryDTO[K], error, <-chan int) {
+) (map[string]*repositories.RepositoryDTO[K], error) {
+	idxsCh := helpers.NewRandChIdxs(o.repositories)
 	res := map[string]*repositories.RepositoryDTO[K]{}
-	resIdxsCh := make(chan int, worksSize)
-	defer close(resIdxsCh)
 
-	if len(*o.repositories) < worksSize {
-		return res, errors.New("Internal error: Not enough repositories"), resIdxsCh
+	if len(*o.repositories) < o.worksSize {
+		return res, errors.New("Internal error: Not enough repositories")
 	}
 
 	var wg sync.WaitGroup
@@ -111,7 +91,6 @@ func (o *PigeonholeOrchestrator[T, K]) executeMultipleFnWithCh(
 				res, err := multipleFn(repo)
 				if err == nil {
 					resCh <- res
-					resIdxsCh <- idx
 					break
 				}
 			}
@@ -122,7 +101,7 @@ func (o *PigeonholeOrchestrator[T, K]) executeMultipleFnWithCh(
 	close(resCh)
 
 	if len(resCh) != o.worksSize {
-		return res, errors.New("Internal error: Not enough successful workers"), resIdxsCh
+		return res, errors.New("Internal error: Not enough successful workers")
 	}
 
 	valMp := map[string]map[string]*repositories.RepositoryDTO[K]{}
@@ -162,21 +141,7 @@ func (o *PigeonholeOrchestrator[T, K]) executeMultipleFnWithCh(
 		}
 	}
 
-	return ansMp, nil, resIdxsCh
-}
-
-func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFn(
-	multipleFn func(*T) (map[string]*repositories.RepositoryDTO[K], error),
-) (map[string]*repositories.RepositoryDTO[K], error, <-chan int) {
-	idxsCh := helpers.NewRandChIdxs(o.repositories)
-	return o.executeMultipleFnWithCh(multipleFn, idxsCh, o.worksSize)
-}
-
-func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFnWithChannel(
-	multipleFn func(*T) (map[string]*repositories.RepositoryDTO[K], error),
-	idxsCh <-chan int,
-) (map[string]*repositories.RepositoryDTO[K], error, <-chan int) {
-	return o.executeMultipleFnWithCh(multipleFn, idxsCh, len(idxsCh))
+	return ansMp, nil
 }
 
 func NewPigeonholeOrchestrator[T any, K any](

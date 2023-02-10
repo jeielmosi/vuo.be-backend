@@ -9,7 +9,6 @@ import (
 )
 
 func GetApp(envName string) (*firebase.App, error) {
-	//TODO: Define FIREBASE_PATH
 	opt := option.WithCredentialsFile(os.Getenv(envName + "_FIREBASE_PATH"))
 	return firebase.NewApp(context.Background(), nil, opt)
 }
