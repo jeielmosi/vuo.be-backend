@@ -8,13 +8,21 @@ import (
 )
 
 func NewRandomHash(size uint) string {
+	if size == 0 {
+		return ""
+	}
+
 	SeedOnce()
 
-	const length int = len(helpers.ALPHABET)
 	var sb strings.Builder
-	for i := uint(0); i < size; i++ {
-		idx := rand.Intn(length)
-		r := rune(helpers.ALPHABET[idx])
+
+	idx := rand.Intn(len(helpers.FIRST_CHAR_ALPHABET))
+	r := rune(helpers.FIRST_CHAR_ALPHABET[idx])
+	sb.WriteRune(r)
+
+	for i := uint(1); i < size; i++ {
+		idx = rand.Intn(len(helpers.ALPHABET))
+		r = rune(helpers.ALPHABET[idx])
 		sb.WriteRune(r)
 	}
 

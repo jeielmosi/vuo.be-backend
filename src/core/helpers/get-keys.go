@@ -5,7 +5,7 @@ func GetKeys[T any](mp map[string]T) []string {
 	ans := make([]string, size)
 
 	i := 0
-	for key, _ := range mp {
+	for key := range mp {
 		ans[i] = key
 		i++
 	}
