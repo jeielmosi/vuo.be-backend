@@ -55,6 +55,12 @@ func (g *GAMShortenBulkGateway) post(
 	}
 
 	dto := repositories.NewRepositoryDTO(shortenBulk, true)
+	err = g.repository.Post(hash, *dto)
+	if err == nil {
+		return err
+	}
+
+	dto = backup.Update()
 	return g.repository.Post(hash, *dto)
 }
 
