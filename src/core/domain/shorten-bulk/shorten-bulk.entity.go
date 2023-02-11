@@ -2,12 +2,12 @@ package entities
 
 type ShortenBulkEntity struct {
 	URL    string
-	Clicks uint64
+	Clicks int64
 }
 
 func NewShortenBulkEntity(
 	url string,
-	clicks uint64,
+	clicks int64,
 ) *ShortenBulkEntity {
 	return &ShortenBulkEntity{
 		URL:    url,

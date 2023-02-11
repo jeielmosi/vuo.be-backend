@@ -1,4 +1,4 @@
-package firestore
+package firestore_shorten_bulk
 
 import (
 	"context"

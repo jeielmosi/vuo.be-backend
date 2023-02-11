@@ -8,6 +8,7 @@ import (
 	helpers "github.com/jei-el/vuo.be-backend/src/core/helpers"
 	random "github.com/jei-el/vuo.be-backend/src/core/helpers/random"
 	repository_helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
+	firestore_shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/firestore"
 	pigeonhole_shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole"
 	shorten_bulk_gateway "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/gateways/interfaces"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
@@ -142,9 +143,11 @@ func (g *GAMShortenBulkGateway) Post(shortenBulk entities.ShortenBulkEntity) (st
 	return g.postAtOldHash(&shortenBulk)
 }
 
-func NewGAMShortenBulkGateway() (shorten_bulk_gateway.ShortenBulkGateway, error) {
+func NewGAMShortenBulkGateway(envName string) (shorten_bulk_gateway.ShortenBulkGateway, error) {
+	firestore := firestore_shorten_bulk.NewShortenBulkFirestore(envName)
 	var repos = &[]*shorten_bulk.ShortenBulkRepository{
-		//TODO: Create G.A.M
+		&firestore,
+		//TODO: Create A.M
 	}
 	pigeonhole, err := pigeonhole_shorten_bulk.NewPigeonholeShortenBulkRepository(repos)
 	if err != nil {

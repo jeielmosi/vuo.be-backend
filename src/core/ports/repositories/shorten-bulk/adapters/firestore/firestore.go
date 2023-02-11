@@ -1,8 +1,12 @@
-package firestore
+package firestore_shorten_bulk
 
 import (
+	"context"
+	"errors"
+
 	"cloud.google.com/go/firestore"
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
+	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	types "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/types"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
@@ -11,7 +15,6 @@ type ShortenBulkFirestore struct {
 	envName string
 }
 
-// TODO: Verify if is OK
 func (f *ShortenBulkFirestore) Get(hash string) (
 	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
@@ -30,7 +33,6 @@ func (f *ShortenBulkFirestore) Get(hash string) (
 	return types.ToRepositoryDTO(snapshot.Data())
 }
 
-// TODO: Verify if is OK
 func (f *ShortenBulkFirestore) GetOldest(size int) (
 	map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
@@ -76,25 +78,97 @@ func (f *ShortenBulkFirestore) Post(
 	defer client.Close()
 
 	flatten := types.NewShortenBulkFlattenDTO(dto)
-	_, err = client.Collection(ShortenBulkCollection).
-		Doc(hash).
-		Set(ctx, flatten)
+	ref := client.Collection(ShortenBulkCollection).Doc(hash)
+	fn := func(ctx context.Context, tx *firestore.Transaction) error {
+		doc, err := tx.Get(ref)
+		if err != nil {
+			return err
+		}
 
-	return err
+		itf, err := doc.DataAt(types.LockedField)
+		currLock := itf.(bool)
+
+		if flatten[types.LockedField].(bool) != currLock {
+			return errors.New("Updating the lock status in a wrong way")
+		}
+
+		return tx.Set(ref, flatten, firestore.MergeAll)
+	}
+
+	return client.RunTransaction(ctx, fn)
 }
 
-// TODO: return a interface type
-func NewShortenBulkFirestore(envName string) *ShortenBulkFirestore {
+func (f *ShortenBulkFirestore) IncrementClicks(hash string) error {
+	client, err, ctx := getClient(f.envName)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	ref := client.Collection(ShortenBulkCollection).Doc(hash)
+	fn := func(ctx context.Context, tx *firestore.Transaction) error {
+		doc, err := tx.Get(ref)
+		if err != nil {
+			return err
+		}
+
+		clicks, err := doc.DataAt(types.ClicksField)
+		if err != nil {
+			return err
+		}
+
+		var flatten types.ShortenBulkFlattenDTO
+		flatten[types.ClicksField] = clicks.(int64) + 1
+
+		return tx.Set(ref, flatten, firestore.MergeAll)
+	}
+
+	return client.RunTransaction(ctx, fn)
+}
+
+func (f *ShortenBulkFirestore) updateLocked(hash string, locked bool) error {
+	client, err, ctx := getClient(f.envName)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+
+	ref := client.Collection(ShortenBulkCollection).Doc(hash)
+
+	fn := func(ctx context.Context, tx *firestore.Transaction) error {
+		doc, err := tx.Get(ref)
+		if err != nil {
+			return err
+		}
+
+		curr, err := doc.DataAt(types.LockedField)
+		if err != nil {
+			return err
+		}
+
+		if curr.(bool) == locked {
+			return errors.New("Document is alredy locked/unlocked")
+		}
+
+		var flatten types.ShortenBulkFlattenDTO
+		flatten[types.LockedField] = locked
+
+		return tx.Set(ref, flatten, firestore.MergeAll)
+	}
+
+	return client.RunTransaction(ctx, fn)
+}
+
+func (f *ShortenBulkFirestore) Lock(hash string) error {
+	return f.updateLocked(hash, true)
+}
+
+func (f *ShortenBulkFirestore) Unlock(hash string) error {
+	return f.updateLocked(hash, false)
+}
+
+func NewShortenBulkFirestore(envName string) shorten_bulk.ShortenBulkRepository {
 	return &ShortenBulkFirestore{
 		envName,
 	}
 }
-
-/*
-
-TODO:
-
-	IncrementClicks(hash string) error
-	Lock(hash string) error
-	Unlock(hash string) error
-*/
