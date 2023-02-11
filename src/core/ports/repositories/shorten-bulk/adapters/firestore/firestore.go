@@ -1,31 +1,17 @@
 package firestore
 
 import (
-	"context"
-
 	"cloud.google.com/go/firestore"
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
-	repository_helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
+	types "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/types"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
-
-func getClient(envName string) (*firestore.Client, error, context.Context) {
-	ctx := context.Background()
-
-	app, err := getApp(envName)
-	if err != nil {
-		return nil, err, ctx
-	}
-
-	client, err := app.Firestore(ctx)
-	return client, err, ctx
-}
 
 type ShortenBulkFirestore struct {
 	envName string
 }
 
-// TODO: use const to standardize
+// TODO: Verify if is OK
 func (f *ShortenBulkFirestore) Get(hash string) (
 	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
@@ -36,36 +22,65 @@ func (f *ShortenBulkFirestore) Get(hash string) (
 	}
 	defer client.Close()
 
-	snapshot, err := client.Collection(Collection).Doc(hash).Get(ctx)
+	snapshot, err := client.Collection(ShortenBulkCollection).Doc(hash).Get(ctx)
 	if err != nil || !snapshot.Exists() {
 		return nil, err
 	}
 
-	data := snapshot.Data()
+	return types.ToRepositoryDTO(snapshot.Data())
+}
 
-	createdAtStr := data[CreatedAtField].(string)
-	createdAt, err := repository_helpers.NewTimeFrom10NanosecondsString(&createdAtStr)
+// TODO: Verify if is OK
+func (f *ShortenBulkFirestore) GetOldest(size int) (
+	map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity],
+	error,
+) {
+	client, err, ctx := getClient(f.envName)
 	if err != nil {
 		return nil, err
 	}
+	defer client.Close()
 
-	updatedAtStr := data[UpdatedAtField].(string)
-	updatedAt, err := repository_helpers.NewTimeFrom10NanosecondsString(&updatedAtStr)
+	iter := client.
+		Collection(ShortenBulkCollection).
+		OrderBy(types.CreatedAtField, firestore.Asc).
+		Where(types.LockedField, "==", false).
+		Limit(size).
+		Documents(ctx)
+
+	mp := map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity]{}
+	for true {
+		snapshot, err := iter.Next()
+		if err != nil {
+			break
+		}
+		dto, err := types.ToRepositoryDTO(snapshot.Data())
+		if err != nil {
+			break
+		}
+
+		mp[snapshot.Ref.ID] = dto
+	}
+
+	return mp, nil
+}
+
+func (f *ShortenBulkFirestore) Post(
+	hash string,
+	dto repositories.RepositoryDTO[entities.ShortenBulkEntity],
+) error {
+	client, err, ctx := getClient(f.envName)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer client.Close()
 
-	dto := &repositories.RepositoryDTO[entities.ShortenBulkEntity]{
-		Entity: entities.NewShortenBulkEntity(
-			data[URLField].(string),
-			data[ClicksField].(uint64),
-		),
-		CreatedAt: *createdAt,
-		Locked:    data[LockedField].(bool),
-		UpdatedAt: *updatedAt,
-	}
+	flatten := types.NewShortenBulkFlattenDTO(dto)
+	_, err = client.Collection(ShortenBulkCollection).
+		Doc(hash).
+		Set(ctx, flatten)
 
-	return dto, err
+	return err
 }
 
 // TODO: return a interface type
@@ -79,8 +94,6 @@ func NewShortenBulkFirestore(envName string) *ShortenBulkFirestore {
 
 TODO:
 
-	GetOldests(size uint) (map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity], error)
-	Post(hash string, shorten_bulk repositories.RepositoryDTO[entities.ShortenBulkEntity]) error
 	IncrementClicks(hash string) error
 	Lock(hash string) error
 	Unlock(hash string) error

@@ -81,9 +81,9 @@ func (g *GAMShortenBulkGateway) postAtNewHash(shortenBulk *entities.ShortenBulkE
 func (g *GAMShortenBulkGateway) postAtOldHash(
 	shortenBulk *entities.ShortenBulkEntity,
 ) (string, error) {
-	const OLDESTS_SIZE uint = 101
+	const OLDESTS_SIZE int = 101
 
-	mp, err := g.repository.GetOldests(OLDESTS_SIZE)
+	mp, err := g.repository.GetOldest(OLDESTS_SIZE)
 	if err != nil {
 		return "", err
 	}

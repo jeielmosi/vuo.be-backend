@@ -23,11 +23,11 @@ func (p *PigeonholeShortenBulkRepository) Get(hash string) (
 	return p.orchestrator.ExecuteSingleFn(fn)
 }
 
-func (p *PigeonholeShortenBulkRepository) GetOldests(size uint) (
+func (p *PigeonholeShortenBulkRepository) GetOldest(size int) (
 	map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
-	fn := funcs.NewGetOldestsFn(size)
+	fn := funcs.NewGetOldestFn(size)
 	res, err := p.orchestrator.ExecuteMultipleFn(fn)
 	if err != nil {
 		return nil, err
