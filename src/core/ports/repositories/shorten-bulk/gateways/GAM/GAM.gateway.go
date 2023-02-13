@@ -36,7 +36,7 @@ func (g *GAMShortenBulkGateway) Get(hash string) (*entities.ShortenBulkEntity, e
 func (g *GAMShortenBulkGateway) post(
 	hash string,
 	shortenBulk *entities.ShortenBulkEntity,
-	stopFn func(*repositories.RepositoryDTO[entities.ShortenBulkEntity]) error,
+	stopFunc func(*repositories.RepositoryDTO[entities.ShortenBulkEntity]) error,
 ) error {
 	err := g.repository.Lock(hash)
 	if err != nil {
@@ -49,7 +49,7 @@ func (g *GAMShortenBulkGateway) post(
 		return err
 	}
 
-	err = stopFn(backup)
+	err = stopFunc(backup)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (g *GAMShortenBulkGateway) post(
 func (g *GAMShortenBulkGateway) postAtNewHash(shortenBulk *entities.ShortenBulkEntity) (string, error) {
 	const TRY_SIZE int = 11
 
-	stopFn := func(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
+	stopFunc := func(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
 		if dto != nil {
 			return errors.New("Hash: is used")
 		}
@@ -76,7 +76,7 @@ func (g *GAMShortenBulkGateway) postAtNewHash(shortenBulk *entities.ShortenBulkE
 
 	for t := 0; t < TRY_SIZE; t++ {
 		hash := random.NewRandomHash(helpers.HASH_SIZE)
-		err := g.post(hash, shortenBulk, stopFn)
+		err := g.post(hash, shortenBulk, stopFunc)
 		if err == nil {
 			return hash, err
 		}
@@ -105,7 +105,7 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 		}
 	}
 
-	stopFn := func(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
+	stopFunc := func(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
 		if dto == nil {
 			return nil
 		}
@@ -131,7 +131,7 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 		hash := keys[last]
 		dto := mp[hash]
 
-		err = g.post(hash, dto.Entity, stopFn)
+		err = g.post(hash, dto.Entity, stopFunc)
 		if err == nil {
 			return hash, err
 		}

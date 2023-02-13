@@ -6,7 +6,7 @@ import (
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
-func NewGetOldestFn(size int) func(*shorten_bulk.ShortenBulkRepository) (map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
+func NewGetOldestFunc(size int) func(*shorten_bulk.ShortenBulkRepository) (map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
 	return func(repository *shorten_bulk.ShortenBulkRepository) (
 		map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 		error,

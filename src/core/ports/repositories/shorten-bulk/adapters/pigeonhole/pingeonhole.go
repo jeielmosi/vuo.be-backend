@@ -19,16 +19,16 @@ func (p *PigeonholeShortenBulkRepository) Get(hash string) (
 	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
-	fn := funcs.NewGetFn(hash)
-	return p.orchestrator.ExecuteSingleFn(fn)
+	fn := funcs.NewGetFunc(hash)
+	return p.orchestrator.ExecuteSingleFunc(fn)
 }
 
 func (p *PigeonholeShortenBulkRepository) GetOldest(size int) (
 	map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
-	fn := funcs.NewGetOldestFn(size)
-	res, err := p.orchestrator.ExecuteMultipleFn(fn)
+	fn := funcs.NewGetOldestFunc(size)
+	res, err := p.orchestrator.ExecuteMultipleFunc(fn)
 	if err != nil {
 		return nil, err
 	}
@@ -45,27 +45,27 @@ func (p *PigeonholeShortenBulkRepository) Post(
 	hash string,
 	dto repositories.RepositoryDTO[entities.ShortenBulkEntity],
 ) error {
-	fn := funcs.NewPostFn(hash, dto)
-	_, err := p.orchestrator.ExecuteSingleFn(fn)
+	fn := funcs.NewPostFunc(hash, dto)
+	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 
 	return err
 }
 
 func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string) error {
-	fn := funcs.NewIncrementClicksFn(hash)
-	_, err := p.orchestrator.ExecuteSingleFn(fn)
+	fn := funcs.NewIncrementClicksFunc(hash)
+	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 	return err
 }
 
 func (p *PigeonholeShortenBulkRepository) Lock(hash string) error {
-	fn := funcs.NewLockFn(hash)
-	_, err := p.orchestrator.ExecuteSingleFn(fn)
+	fn := funcs.NewLockFunc(hash)
+	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 	return err
 }
 
 func (p *PigeonholeShortenBulkRepository) Unlock(hash string) error {
-	fn := funcs.NewUnlockFn(hash)
-	_, err := p.orchestrator.ExecuteSingleFn(fn)
+	fn := funcs.NewUnlockFunc(hash)
+	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 	return err
 }
 

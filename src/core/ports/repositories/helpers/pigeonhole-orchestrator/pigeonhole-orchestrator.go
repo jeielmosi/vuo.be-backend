@@ -13,8 +13,8 @@ type PigeonholeOrchestrator[T any, K any] struct {
 	repositories *[]*T
 }
 
-func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFn(
-	singleFn func(*T) (*repositories.RepositoryDTO[K], error),
+func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFunc(
+	singleFunc func(*T) (*repositories.RepositoryDTO[K], error),
 ) (*repositories.RepositoryDTO[K], error) {
 	idxsCh := helpers.NewRandChIdxs(o.repositories)
 
@@ -30,7 +30,7 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFn(
 		go func() {
 			for idx, ok := <-idxsCh; ok; idx, ok = <-idxsCh {
 				repo := (*o.repositories)[idx]
-				res, err := singleFn(repo)
+				res, err := singleFunc(repo)
 				if err == nil {
 					resCh <- res
 					break
@@ -71,8 +71,8 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFn(
 	return valMp[bestTimestamp], nil
 }
 
-func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFn(
-	multipleFn func(*T) (map[string]*repositories.RepositoryDTO[K], error),
+func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFunc(
+	multipleFunc func(*T) (map[string]*repositories.RepositoryDTO[K], error),
 ) (map[string]*repositories.RepositoryDTO[K], error) {
 	idxsCh := helpers.NewRandChIdxs(o.repositories)
 	res := map[string]*repositories.RepositoryDTO[K]{}
@@ -88,7 +88,7 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFn(
 		go func() {
 			for idx, ok := <-idxsCh; ok; idx, ok = <-idxsCh {
 				repo := (*o.repositories)[idx]
-				res, err := multipleFn(repo)
+				res, err := multipleFunc(repo)
 				if err == nil {
 					resCh <- res
 					break

@@ -6,7 +6,7 @@ import (
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
-func NewGetFn(hash string) func(*shorten_bulk.ShortenBulkRepository) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
+func NewGetFunc(hash string) func(*shorten_bulk.ShortenBulkRepository) (*repositories.RepositoryDTO[entities.ShortenBulkEntity], error) {
 	return func(repository *shorten_bulk.ShortenBulkRepository) (
 		*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 		error,
