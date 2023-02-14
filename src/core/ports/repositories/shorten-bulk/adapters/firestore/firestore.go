@@ -3,6 +3,7 @@ package firestore_shorten_bulk
 import (
 	"context"
 	"errors"
+	"log"
 
 	"cloud.google.com/go/firestore"
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
@@ -54,11 +55,13 @@ func (f *ShortenBulkFirestore) GetOldest(size int) (
 	for true {
 		snapshot, err := iter.Next()
 		if err != nil {
+			log.Println(err.Error())
 			break
 		}
 		dto, err := types.ToRepositoryDTO(snapshot.Data())
 		if err != nil {
-			break
+			log.Println(err.Error())
+			continue
 		}
 
 		mp[snapshot.Ref.ID] = dto
@@ -85,8 +88,8 @@ func (f *ShortenBulkFirestore) Post(
 			return err
 		}
 
-		itf, err := doc.DataAt(types.LockedField)
-		currLock := itf.(bool)
+		lock, err := doc.DataAt(types.LockedField)
+		currLock := lock.(bool)
 
 		if flatten[types.LockedField].(bool) != currLock {
 			return errors.New("Updating the lock status in a wrong way")
@@ -101,6 +104,7 @@ func (f *ShortenBulkFirestore) Post(
 func (f *ShortenBulkFirestore) IncrementClicks(hash string) error {
 	client, err, ctx := getClient(f.envName)
 	if err != nil {
+
 		return err
 	}
 	defer client.Close()
@@ -117,7 +121,7 @@ func (f *ShortenBulkFirestore) IncrementClicks(hash string) error {
 			return err
 		}
 
-		var flatten types.ShortenBulkFlattenDTO
+		flatten := types.ShortenBulkFlattenDTO{}
 		flatten[types.ClicksField] = clicks.(int64) + 1
 
 		return tx.Set(ref, flatten, firestore.MergeAll)
@@ -147,10 +151,11 @@ func (f *ShortenBulkFirestore) updateLocked(hash string, locked bool) error {
 		}
 
 		if curr.(bool) == locked {
-			return errors.New("Document is alredy locked/unlocked")
+			log.Println(curr, locked)
+			return errors.New("Document is already locked/unlocked")
 		}
 
-		var flatten types.ShortenBulkFlattenDTO
+		flatten := types.ShortenBulkFlattenDTO{}
 		flatten[types.LockedField] = locked
 
 		return tx.Set(ref, flatten, firestore.MergeAll)

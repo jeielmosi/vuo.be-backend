@@ -11,7 +11,6 @@ type RepositoryDTO[T any] struct {
 	UpdatedAt time.Time
 }
 
-// TODO: use Update at gateway post and update GetOldest by CreatedAt
 func (r *RepositoryDTO[T]) Update() *RepositoryDTO[T] {
 	now := time.Now()
 	return &RepositoryDTO[T]{
