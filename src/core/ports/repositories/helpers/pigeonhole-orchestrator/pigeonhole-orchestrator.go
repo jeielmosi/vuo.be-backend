@@ -16,7 +16,8 @@ type PigeonholeOrchestrator[T any, K any] struct {
 func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFunc(
 	singleFunc func(*T) (*repositories.RepositoryDTO[K], error),
 ) (*repositories.RepositoryDTO[K], error) {
-	idxsCh := helpers.NewRandChIdxs(o.repositories)
+	size := len(*o.repositories)
+	idxsCh := helpers.NewRandChanIdxs(uint(size))
 
 	if len(idxsCh) < o.worksSize {
 		return nil, errors.New("Internal error: Not enough repositories")
@@ -74,7 +75,8 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFunc(
 func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFunc(
 	multipleFunc func(*T) (map[string]*repositories.RepositoryDTO[K], error),
 ) (map[string]*repositories.RepositoryDTO[K], error) {
-	idxsCh := helpers.NewRandChIdxs(o.repositories)
+	size := len(*o.repositories)
+	idxsCh := helpers.NewRandChanIdxs(uint(size))
 	res := map[string]*repositories.RepositoryDTO[K]{}
 
 	if len(*o.repositories) < o.worksSize {

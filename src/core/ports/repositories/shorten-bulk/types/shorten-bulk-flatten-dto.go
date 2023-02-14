@@ -50,7 +50,7 @@ func ToRepositoryDTO(flatten ShortenBulkFlattenDTO) (
 	dto := &repositories.RepositoryDTO[entities.ShortenBulkEntity]{
 		Entity: entities.NewShortenBulkEntity(
 			flatten[URLField].(string),
-			flatten[ClicksField].(int64),
+			flatten[ClicksField].(uint64),
 		),
 		CreatedAt: *createdAt,
 		Locked:    flatten[LockedField].(bool),

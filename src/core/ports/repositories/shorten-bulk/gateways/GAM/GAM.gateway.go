@@ -107,7 +107,7 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 
 	stopFunc := func(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
 		if dto == nil {
-			return nil
+			return errors.New("Empty hash")
 		}
 
 		if dto.Locked {
