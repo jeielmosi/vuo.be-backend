@@ -6,7 +6,6 @@ import (
 
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	helpers "github.com/jei-el/vuo.be-backend/src/core/helpers"
-	random "github.com/jei-el/vuo.be-backend/src/core/helpers/random"
 	repository_helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
 	firestore_shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/firestore"
 	pigeonhole_shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole"
@@ -75,7 +74,7 @@ func (g *GAMShortenBulkGateway) postAtNewHash(shortenBulk *entities.ShortenBulkE
 	}
 
 	for t := 0; t < TRY_SIZE; t++ {
-		hash := random.NewRandomHash(helpers.HASH_SIZE)
+		hash := helpers.NewRandomHash(helpers.HASH_SIZE)
 		err := g.post(hash, shortenBulk, stopFunc)
 		if err == nil {
 			return hash, err

@@ -14,6 +14,7 @@ import (
 	randutil "go.step.sm/crypto/randutil"
 )
 
+// TODO: Move to interface, the test is generic to interface
 const (
 	getHash  = "get"
 	postHash = "post"
