@@ -1,4 +1,4 @@
-package shorten_bulk_test
+package firestore_shorten_bulk
 
 import (
 	"math/rand"
@@ -9,25 +9,23 @@ import (
 	config "github.com/jei-el/vuo.be-backend/src/config"
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	repository_helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
-	firestore_shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/firestore"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
-	shorten_bulk_helpers_test "github.com/jei-el/vuo.be-backend/src/test/shorten-bulk/helpers"
 	randutil "go.step.sm/crypto/randutil"
 )
 
 // TODO: Move to firestore folder
 const (
-	getHash             = "get"
-	postHash            = "post"
-	lockHash            = "lock"
-	incrementClicksHash = "increment_clicks"
+	getHash             = "+get"
+	postHash            = "+post"
+	lockHash            = "+lock"
+	incrementClicksHash = "+increment_clicks"
 )
 
 func getFirestore() shorten_bulk.ShortenBulkRepository {
 	config.Load()
 	envName := os.Getenv("TEST_ENV")
-	return firestore_shorten_bulk.NewShortenBulkFirestore(envName)
+	return NewShortenBulkFirestore(envName)
 }
 
 func getExpectedGetDTO() (
@@ -62,7 +60,7 @@ func getRandomDTO() (
 		),
 	)
 
-	lock := (rnd.Intn(2) == 1)
+	lock := false
 	clicks := rnd.Int63()
 	url, err := randutil.ASCII(1009)
 	if err != nil {
@@ -83,7 +81,7 @@ func TestGet(t *testing.T) {
 		t.Errorf("Creating a time: %s", err.Error())
 	}
 
-	shorten_bulk_helpers_test.TestGet(getHash, firestore, exp, t)
+	shorten_bulk.TestGet(getHash, firestore, exp, t)
 }
 
 func TestGetOldest(t *testing.T) {
@@ -94,12 +92,15 @@ func TestGetOldest(t *testing.T) {
 		t.Errorf("Test error at creating a time: %s", err.Error())
 	}
 
-	shorten_bulk_helpers_test.TestGetOldest(firestore, dto, t)
+	exp := map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity]{}
+	exp[getHash] = dto
+
+	shorten_bulk.TestGetOldest(firestore, exp, t)
 }
 
 func TestIncrementClicks(t *testing.T) {
 	firestore := getFirestore()
-	shorten_bulk_helpers_test.TestIncrementClicks(incrementClicksHash, firestore, t)
+	shorten_bulk.TestIncrementClicks(incrementClicksHash, firestore, t)
 }
 
 func TestPost(t *testing.T) {
@@ -109,10 +110,10 @@ func TestPost(t *testing.T) {
 	}
 
 	firestore := getFirestore()
-	shorten_bulk_helpers_test.TestPost(postHash, firestore, dto, t)
+	shorten_bulk.TestPost(postHash, firestore, dto, t)
 }
 
 func TestLockUnlock(t *testing.T) {
 	firestore := getFirestore()
-	shorten_bulk_helpers_test.TestLockUnlock(lockHash, firestore, t)
+	shorten_bulk.TestLockUnlock(lockHash, firestore, t)
 }

@@ -1,4 +1,4 @@
-package shorten_bulk_helpers_test
+package shorten_bulk
 
 import (
 	"errors"
@@ -8,14 +8,13 @@ import (
 	"testing"
 
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
-	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	types "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/types"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
 func TestGet(
 	hash string,
-	repo shorten_bulk.ShortenBulkRepository,
+	repo ShortenBulkRepository,
 	exp *repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	t *testing.T,
 ) {
@@ -31,8 +30,8 @@ func TestGet(
 }
 
 func TestGetOldest(
-	repo shorten_bulk.ShortenBulkRepository,
-	dto *repositories.RepositoryDTO[entities.ShortenBulkEntity],
+	repo ShortenBulkRepository,
+	exp map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	t *testing.T,
 ) {
 	res, err := repo.GetOldest(1)
@@ -40,8 +39,8 @@ func TestGetOldest(
 		t.Errorf("Test error at get oldest element at hash 'test': %s", err.Error())
 	}
 
-	exp := map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity]{
-		"get": dto,
+	if len(res) != len(exp) {
+		t.Errorf("Test error at compare: Not the same size")
 	}
 
 	if !reflect.DeepEqual(res, exp) {
@@ -53,8 +52,8 @@ func TestGetOldest(
 
 func createTest(
 	hash string,
-	repo shorten_bulk.ShortenBulkRepository,
-	executor func(shorten_bulk.ShortenBulkRepository) error,
+	repo ShortenBulkRepository,
+	executor func(ShortenBulkRepository) error,
 	update func(*repositories.RepositoryDTO[entities.ShortenBulkEntity]) (
 		*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 		error,
@@ -109,10 +108,10 @@ func createTest(
 
 func TestIncrementClicks(
 	hash string,
-	repo shorten_bulk.ShortenBulkRepository,
+	repo ShortenBulkRepository,
 	t *testing.T,
 ) {
-	executor := func(repo shorten_bulk.ShortenBulkRepository) error {
+	executor := func(repo ShortenBulkRepository) error {
 		err := repo.IncrementClicks(hash)
 		if err != nil {
 			log.Println(err.Error())
@@ -141,12 +140,12 @@ func TestIncrementClicks(
 
 func TestPost(
 	hash string,
-	repo shorten_bulk.ShortenBulkRepository,
+	repo ShortenBulkRepository,
 	dto *repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	t *testing.T,
 ) {
-	executor := func(firestore shorten_bulk.ShortenBulkRepository) error {
-		err := firestore.Post(hash, *dto)
+	executor := func(repo ShortenBulkRepository) error {
+		err := repo.Post(hash, *dto)
 		if err != nil {
 			return err
 		}
@@ -169,11 +168,11 @@ func TestPost(
 
 func TestLockUnlock(
 	hash string,
-	repo shorten_bulk.ShortenBulkRepository,
+	repo ShortenBulkRepository,
 	t *testing.T,
 ) {
-	executorLock := func(firestore shorten_bulk.ShortenBulkRepository) error {
-		return firestore.Lock(hash)
+	executorLock := func(repo ShortenBulkRepository) error {
+		return repo.Lock(hash)
 	}
 
 	updateLock := func(prev *repositories.RepositoryDTO[entities.ShortenBulkEntity]) (
@@ -198,8 +197,8 @@ func TestLockUnlock(
 		return
 	}
 
-	executorUnlock := func(firestore shorten_bulk.ShortenBulkRepository) error {
-		return firestore.Unlock(hash)
+	executorUnlock := func(repo ShortenBulkRepository) error {
+		return repo.Unlock(hash)
 	}
 
 	updateUnlock := func(prev *repositories.RepositoryDTO[entities.ShortenBulkEntity]) (
