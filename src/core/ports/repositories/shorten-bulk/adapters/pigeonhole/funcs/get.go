@@ -17,7 +17,7 @@ func NewGetFunc(hash string) func(*shorten_bulk.ShortenBulkRepository) (
 		error,
 	) {
 		if repository == nil {
-			return nil, errors.New("No repository available")
+			return nil, errors.New("Repository is nil")
 		}
 		return (*repository).Get(hash)
 	}

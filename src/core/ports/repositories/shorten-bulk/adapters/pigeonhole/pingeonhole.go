@@ -1,6 +1,8 @@
 package pigeonhole_shorten_bulk
 
 import (
+	"time"
+
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers/pigeonhole-orchestrator"
 	funcs "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/adapters/pigeonhole/funcs"
@@ -51,20 +53,20 @@ func (p *PigeonholeShortenBulkRepository) Post(
 	return err
 }
 
-func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string) error {
-	fn := funcs.NewIncrementClicksFunc(hash)
+func (p *PigeonholeShortenBulkRepository) IncrementClicks(hash string, updatedAt time.Time) error {
+	fn := funcs.NewIncrementClicksFunc(hash, updatedAt)
 	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 	return err
 }
 
-func (p *PigeonholeShortenBulkRepository) Lock(hash string) error {
-	fn := funcs.NewLockFunc(hash)
+func (p *PigeonholeShortenBulkRepository) Lock(hash string, updatedAt time.Time) error {
+	fn := funcs.NewLockFunc(hash, updatedAt)
 	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 	return err
 }
 
-func (p *PigeonholeShortenBulkRepository) Unlock(hash string) error {
-	fn := funcs.NewUnlockFunc(hash)
+func (p *PigeonholeShortenBulkRepository) Unlock(hash string, updatedAt time.Time) error {
+	fn := funcs.NewUnlockFunc(hash, updatedAt)
 	_, err := p.orchestrator.ExecuteSingleFunc(fn)
 	return err
 }

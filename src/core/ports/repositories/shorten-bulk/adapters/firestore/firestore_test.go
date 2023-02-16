@@ -14,7 +14,6 @@ import (
 	randutil "go.step.sm/crypto/randutil"
 )
 
-// TODO: Move to firestore folder
 const (
 	getHash             = "+get"
 	postHash            = "+post"
@@ -62,13 +61,25 @@ func getRandomDTO() (
 
 	lock := false
 	clicks := rnd.Int63()
-	url, err := randutil.ASCII(1009)
+	url, err := randutil.ASCII(101)
 	if err != nil {
 		return nil, err
 	}
 
 	entity := entities.NewShortenBulkEntity(url, clicks)
-	exp := repositories.NewRepositoryDTO(entity, lock)
+
+	timestamp := "9999-12-31T23:59:59Z"
+	date, err := repository_helpers.NewTimeFrom10NanosecondsString(&timestamp)
+	if err != nil || date == nil {
+		return nil, err
+	}
+
+	exp := &repositories.RepositoryDTO[entities.ShortenBulkEntity]{
+		Entity:    entity,
+		CreatedAt: *date,
+		Locked:    lock,
+		UpdatedAt: *date,
+	}
 
 	return exp, nil
 }

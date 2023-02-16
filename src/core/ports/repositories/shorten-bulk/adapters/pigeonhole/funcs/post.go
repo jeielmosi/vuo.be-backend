@@ -17,7 +17,7 @@ func NewPostFunc(hash string, dto repositories.RepositoryDTO[entities.ShortenBul
 		error,
 	) {
 		if repository == nil {
-			return nil, errors.New("No repository available")
+			return nil, errors.New("Repository is nil")
 		}
 		err := (*repository).Post(hash, dto)
 		return nil, err

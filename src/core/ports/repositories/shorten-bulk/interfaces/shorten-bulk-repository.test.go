@@ -6,6 +6,7 @@ import (
 	"log"
 	"reflect"
 	"testing"
+	"time"
 
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	types "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/types"
@@ -21,7 +22,7 @@ func TestGet(
 
 	res, err := repo.Get(hash)
 	if err != nil {
-		t.Errorf("Get element at hash 'test': %s", err.Error())
+		t.Errorf("Get element at hash '%s': %s", hash, err.Error())
 	}
 
 	if !reflect.DeepEqual(res, exp) {
@@ -36,7 +37,7 @@ func TestGetOldest(
 ) {
 	res, err := repo.GetOldest(1)
 	if err != nil {
-		t.Errorf("Test error at get oldest element at hash 'test': %s", err.Error())
+		t.Errorf("Test error at get oldest elements: %s", err.Error())
 	}
 
 	if len(res) != len(exp) {
@@ -44,8 +45,23 @@ func TestGetOldest(
 	}
 
 	if !reflect.DeepEqual(res, exp) {
-		fmt.Println(res)
-		fmt.Println(exp)
+		fmt.Println("result:")
+		for key, val := range res {
+			if val == nil {
+				fmt.Println(key, ": nil")
+				continue
+			}
+			fmt.Println(key, ":", types.NewShortenBulkFlattenDTO(*val))
+		}
+
+		fmt.Println("expected:")
+		for key, val := range exp {
+			if val == nil {
+				fmt.Println(key, ": nil")
+				continue
+			}
+			fmt.Println(key, ":", types.NewShortenBulkFlattenDTO(*val))
+		}
 		t.Errorf("Test error at compare the get result")
 	}
 }
@@ -111,8 +127,9 @@ func TestIncrementClicks(
 	repo ShortenBulkRepository,
 	t *testing.T,
 ) {
+	updatedAt := time.Now()
 	executor := func(repo ShortenBulkRepository) error {
-		err := repo.IncrementClicks(hash)
+		err := repo.IncrementClicks(hash, updatedAt)
 		if err != nil {
 			log.Println(err.Error())
 			return err
@@ -129,6 +146,7 @@ func TestIncrementClicks(
 			return nil, errors.New("No element available")
 		}
 		prev.Entity.Clicks += 1
+		prev.UpdatedAt = updatedAt
 		return prev, nil
 	}
 
@@ -171,8 +189,9 @@ func TestLockUnlock(
 	repo ShortenBulkRepository,
 	t *testing.T,
 ) {
+	updatedAt := time.Now()
 	executorLock := func(repo ShortenBulkRepository) error {
-		return repo.Lock(hash)
+		return repo.Lock(hash, updatedAt)
 	}
 
 	updateLock := func(prev *repositories.RepositoryDTO[entities.ShortenBulkEntity]) (
@@ -188,6 +207,7 @@ func TestLockUnlock(
 		}
 
 		prev.Locked = true
+		prev.UpdatedAt = updatedAt
 		return prev, nil
 	}
 
@@ -197,8 +217,9 @@ func TestLockUnlock(
 		return
 	}
 
+	updatedAt = time.Now()
 	executorUnlock := func(repo ShortenBulkRepository) error {
-		return repo.Unlock(hash)
+		return repo.Unlock(hash, updatedAt)
 	}
 
 	updateUnlock := func(prev *repositories.RepositoryDTO[entities.ShortenBulkEntity]) (
@@ -214,6 +235,7 @@ func TestLockUnlock(
 		}
 
 		prev.Locked = false
+		prev.UpdatedAt = updatedAt
 		return prev, nil
 	}
 

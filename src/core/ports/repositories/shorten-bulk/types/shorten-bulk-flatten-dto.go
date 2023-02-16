@@ -35,13 +35,24 @@ func ToRepositoryDTO(flatten ShortenBulkFlattenDTO) (
 	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
-	createdAtStr := flatten[CreatedAtField].(string)
+	if len(flatten) == 0 {
+		return nil, nil
+	}
+
+	createdAtStr, ok := flatten[CreatedAtField].(string)
+	if !ok {
+		return nil, nil
+	}
+
 	createdAt, err := repository_helpers.NewTimeFrom10NanosecondsString(&createdAtStr)
 	if err != nil {
 		return nil, err
 	}
 
-	updatedAtStr := flatten[UpdatedAtField].(string)
+	updatedAtStr, ok := flatten[UpdatedAtField].(string)
+	if !ok {
+		return nil, nil
+	}
 	updatedAt, err := repository_helpers.NewTimeFrom10NanosecondsString(&updatedAtStr)
 	if err != nil {
 		return nil, err

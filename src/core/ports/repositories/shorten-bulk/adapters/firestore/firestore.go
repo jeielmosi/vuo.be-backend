@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"log"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
+	repository_helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	types "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/types"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type ShortenBulkFirestore struct {
@@ -27,7 +31,11 @@ func (f *ShortenBulkFirestore) Get(hash string) (
 	defer client.Close()
 
 	snapshot, err := client.Collection(ShortenBulkCollection).Doc(hash).Get(ctx)
-	if err != nil || !snapshot.Exists() {
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		log.Fatalf("firestore.Get: %s", err.Error())
 		return nil, err
 	}
 
@@ -76,7 +84,10 @@ func (f *ShortenBulkFirestore) Post(
 ) error {
 	client, err, ctx := getClient(f.envName)
 	if err != nil {
-		return err
+		if status.Code(err) != codes.NotFound {
+			log.Fatalf("firestore.Post: %s", err.Error())
+			return err
+		}
 	}
 	defer client.Close()
 
@@ -101,13 +112,15 @@ func (f *ShortenBulkFirestore) Post(
 	return client.RunTransaction(ctx, fn)
 }
 
-func (f *ShortenBulkFirestore) IncrementClicks(hash string) error {
+func (f *ShortenBulkFirestore) IncrementClicks(hash string, updatedAt time.Time) error {
 	client, err, ctx := getClient(f.envName)
 	if err != nil {
 
 		return err
 	}
 	defer client.Close()
+
+	timestamp := repository_helpers.TimeTo10NanosecondsString(updatedAt)
 
 	ref := client.Collection(ShortenBulkCollection).Doc(hash)
 	fn := func(ctx context.Context, tx *firestore.Transaction) error {
@@ -123,6 +136,7 @@ func (f *ShortenBulkFirestore) IncrementClicks(hash string) error {
 
 		flatten := types.ShortenBulkFlattenDTO{}
 		flatten[types.ClicksField] = clicks.(int64) + 1
+		flatten[types.UpdatedAtField] = timestamp
 
 		return tx.Set(ref, flatten, firestore.MergeAll)
 	}
@@ -130,23 +144,32 @@ func (f *ShortenBulkFirestore) IncrementClicks(hash string) error {
 	return client.RunTransaction(ctx, fn)
 }
 
-func (f *ShortenBulkFirestore) updateLocked(hash string, locked bool) error {
+func (f *ShortenBulkFirestore) updateLocked(hash string, locked bool, updatedAt time.Time) error {
 	client, err, ctx := getClient(f.envName)
 	if err != nil {
 		return err
 	}
 	defer client.Close()
-
+	timestamp := repository_helpers.TimeTo10NanosecondsString(updatedAt)
 	ref := client.Collection(ShortenBulkCollection).Doc(hash)
 
 	fn := func(ctx context.Context, tx *firestore.Transaction) error {
+		flatten := types.ShortenBulkFlattenDTO{}
+		flatten[types.LockedField] = locked
+		flatten[types.UpdatedAtField] = timestamp
+
 		doc, err := tx.Get(ref)
 		if err != nil {
-			return err
+			if status.Code(err) != codes.NotFound {
+				log.Fatalf("firestore.updateLocked: %s", err.Error())
+				return err
+			}
+			return tx.Set(ref, flatten, firestore.MergeAll)
 		}
 
 		curr, err := doc.DataAt(types.LockedField)
 		if err != nil {
+			log.Fatalf("firestore.updateLocked doc.DataAt: %s", err.Error())
 			return err
 		}
 
@@ -155,21 +178,18 @@ func (f *ShortenBulkFirestore) updateLocked(hash string, locked bool) error {
 			return errors.New("Document is already locked/unlocked")
 		}
 
-		flatten := types.ShortenBulkFlattenDTO{}
-		flatten[types.LockedField] = locked
-
 		return tx.Set(ref, flatten, firestore.MergeAll)
 	}
 
 	return client.RunTransaction(ctx, fn)
 }
 
-func (f *ShortenBulkFirestore) Lock(hash string) error {
-	return f.updateLocked(hash, true)
+func (f *ShortenBulkFirestore) Lock(hash string, updatedAt time.Time) error {
+	return f.updateLocked(hash, true, updatedAt)
 }
 
-func (f *ShortenBulkFirestore) Unlock(hash string) error {
-	return f.updateLocked(hash, false)
+func (f *ShortenBulkFirestore) Unlock(hash string, updatedAt time.Time) error {
+	return f.updateLocked(hash, false, updatedAt)
 }
 
 func NewShortenBulkFirestore(envName string) shorten_bulk.ShortenBulkRepository {

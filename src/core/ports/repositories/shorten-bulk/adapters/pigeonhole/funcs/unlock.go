@@ -2,13 +2,14 @@ package funcs
 
 import (
 	"errors"
+	"time"
 
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
 )
 
-func NewUnlockFunc(hash string) func(*shorten_bulk.ShortenBulkRepository) (
+func NewUnlockFunc(hash string, updatedAt time.Time) func(*shorten_bulk.ShortenBulkRepository) (
 	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
@@ -17,9 +18,9 @@ func NewUnlockFunc(hash string) func(*shorten_bulk.ShortenBulkRepository) (
 		error,
 	) {
 		if repository == nil {
-			return nil, errors.New("No repository available")
+			return nil, errors.New("Repository is nil")
 		}
-		err := (*repository).Unlock(hash)
+		err := (*repository).Unlock(hash, updatedAt)
 		return nil, err
 	}
 }

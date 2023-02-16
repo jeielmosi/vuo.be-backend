@@ -2,7 +2,9 @@ package GAM
 
 import (
 	"errors"
+	"log"
 	"math/rand"
+	"time"
 
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
 	helpers "github.com/jei-el/vuo.be-backend/src/core/helpers"
@@ -19,17 +21,31 @@ type GAMShortenBulkGateway struct {
 }
 
 func (g *GAMShortenBulkGateway) Get(hash string) (*entities.ShortenBulkEntity, error) {
+	now := time.Now()
 	res, err := g.repository.Get(hash)
 	if err != nil {
 		return res.Entity, err
 	}
 
-	err = g.repository.IncrementClicks(hash)
+	if res == nil {
+		return nil, err
+	}
+
+	err = g.repository.IncrementClicks(hash, now)
 	if err != nil {
 		return res.Entity, errors.New("Error at count access processing")
 	}
 
+	res.Entity.Clicks += 1
 	return res.Entity, nil
+}
+
+func (g *GAMShortenBulkGateway) unlock(hash string) {
+	now := time.Now()
+	err := g.repository.Unlock(hash, now)
+	if err != nil {
+		log.Fatalf("Defer unlock '%s': %s", hash, err.Error())
+	}
 }
 
 func (g *GAMShortenBulkGateway) post(
@@ -37,34 +53,51 @@ func (g *GAMShortenBulkGateway) post(
 	shortenBulk *entities.ShortenBulkEntity,
 	stopFunc func(*repositories.RepositoryDTO[entities.ShortenBulkEntity]) error,
 ) error {
-	err := g.repository.Lock(hash)
+	now := time.Now()
+	if shortenBulk == nil {
+		return errors.New("Empty Shorten Bulk")
+	}
+
+	err := g.repository.Lock(hash, now)
 	if err != nil {
+		log.Printf("Lock '%s': %s", hash, err.Error())
 		return err
 	}
-	defer g.repository.Unlock(hash)
+	defer g.unlock(hash)
 
 	backup, err := g.repository.Get(hash)
 	if err != nil {
+		log.Printf("Get backup '%s': %s", hash, err.Error())
 		return err
 	}
 
 	err = stopFunc(backup)
 	if err != nil {
+		log.Printf("StopFunc '%s': %s", hash, err.Error())
 		return err
 	}
 
 	dto := repositories.NewRepositoryDTO(shortenBulk, true)
+	if dto == nil {
+		return errors.New("Empty DTO")
+	}
 	err = g.repository.Post(hash, *dto)
 	if err == nil {
+		log.Printf("Posted at '%s'", hash)
 		return err
 	}
 
 	dto = backup.Update()
-	return g.repository.Post(hash, *dto)
+	err = g.repository.Post(hash, *dto)
+	if err != nil {
+		log.Printf("Post backup '%s': %s", hash, err.Error())
+	}
+
+	return err
 }
 
 func (g *GAMShortenBulkGateway) postAtNewHash(shortenBulk *entities.ShortenBulkEntity) (string, error) {
-	const TRY_SIZE int = 11
+	const TRY_SIZE int = 37
 
 	stopFunc := func(dto *repositories.RepositoryDTO[entities.ShortenBulkEntity]) error {
 		if dto != nil {
@@ -98,6 +131,9 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 
 	lastTimestamp := ""
 	for _, key := range keys {
+		if mp[key] == nil {
+			continue
+		}
 		timestamp := repository_helpers.TimeTo10NanosecondsString(mp[key].CreatedAt)
 		if lastTimestamp < timestamp {
 			lastTimestamp = timestamp
@@ -120,14 +156,15 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 		return nil
 	}
 
-	for size := len(mp); size > 0; size-- {
-		idx := rand.Intn(size)
-		last := size - 1
-		if idx != last {
-			keys[idx], keys[last] = keys[last], keys[idx]
-		}
+	rnd := rand.New(
+		rand.NewSource(
+			time.Now().UTC().UnixNano(),
+		),
+	)
+	perm := rnd.Perm(len(mp))
 
-		hash := keys[last]
+	for _, idx := range perm {
+		hash := keys[idx]
 		dto := mp[hash]
 
 		err = g.post(hash, dto.Entity, stopFunc)
@@ -140,11 +177,10 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 }
 
 func (g *GAMShortenBulkGateway) Post(shortenBulk entities.ShortenBulkEntity) (string, error) {
-	res, err := g.postAtNewHash(&shortenBulk)
+	hash, err := g.postAtNewHash(&shortenBulk)
 	if err == nil {
-		return res, err
+		return hash, err
 	}
-
 	return g.postAtOldHash(&shortenBulk)
 }
 

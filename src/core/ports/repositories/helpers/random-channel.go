@@ -2,10 +2,16 @@ package repository_helpers
 
 import (
 	"math/rand"
+	"time"
 )
 
 func NewRandChanIdxs(size uint) <-chan int {
-	perm := rand.Perm(int(size))
+	rnd := rand.New(
+		rand.NewSource(
+			time.Now().UTC().UnixNano(),
+		),
+	)
+	perm := rnd.Perm(int(size))
 
 	ch := make(chan int, size)
 	for _, val := range perm {
