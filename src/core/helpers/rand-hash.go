@@ -8,9 +8,10 @@ import (
 
 // TODO: verify if could increase alphabet
 const (
-	ALPHABET            = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-0123456789_abcdefghijklmnopqrstuvwxyz"
-	FIRST_CHAR_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-0123456789abcdefghijklmnopqrstuvwxyz"
-	HASH_SIZE           = 7
+	FIRST_CHAR_ALPHABET  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-0123456789abcdefghijklmnopqrstuvwxyz"
+	FIRST_CHAR_FORBIDDEN = "_"
+	ALPHABET             = FIRST_CHAR_ALPHABET + FIRST_CHAR_FORBIDDEN
+	HASH_SIZE            = 7
 )
 
 func NewRandomHash(size uint) string {

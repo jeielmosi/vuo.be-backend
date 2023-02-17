@@ -8,6 +8,7 @@ import (
 
 	config "github.com/jei-el/vuo.be-backend/src/config"
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
+	helpers "github.com/jei-el/vuo.be-backend/src/core/helpers"
 	repository_helpers "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/helpers"
 	shorten_bulk "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/interfaces"
 	repositories "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/types"
@@ -95,7 +96,7 @@ func TestGet(t *testing.T) {
 	shorten_bulk.TestGet(getHash, firestore, exp, t)
 }
 
-func TestGetOldest(t *testing.T) {
+func TestGetOldest1(t *testing.T) {
 	firestore := getFirestore()
 
 	dto, err := getExpectedGetDTO()
@@ -107,6 +108,39 @@ func TestGetOldest(t *testing.T) {
 	exp[getHash] = dto
 
 	shorten_bulk.TestGetOldest(firestore, exp, t)
+}
+
+func TestGetOldest30(t *testing.T) {
+	firestore := getFirestore()
+
+	dto, err := getExpectedGetDTO()
+	if err != nil {
+		t.Errorf("Test error at creating a time: %s", err.Error())
+	}
+
+	exp := map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity]{}
+	exp[getHash] = dto
+
+	size := 30
+	res, err := firestore.GetOldest(size)
+	if err != nil {
+		t.Errorf("Test error at get oldest elements: %s", err.Error())
+	}
+
+	if len(res) != size {
+		t.Errorf("Test error at compare: Not the same size")
+	}
+
+	delete(res, getHash)
+	for key, val := range res {
+		if len(key) != helpers.HASH_SIZE {
+			t.Errorf("Expected a hash with size %d, but got hash: '%s' with size %d", helpers.HASH_SIZE, key, len(key))
+		}
+
+		if val == nil {
+			t.Errorf("Error got a nil DTO")
+		}
+	}
 }
 
 func TestIncrementClicks(t *testing.T) {
