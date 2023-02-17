@@ -193,6 +193,10 @@ func (f *ShortenBulkFirestore) Unlock(hash string, updatedAt time.Time) error {
 }
 
 func NewShortenBulkFirestore(envName string) shorten_bulk.ShortenBulkRepository {
+	return newShortenBulkFirestore(envName)
+}
+
+func newShortenBulkFirestore(envName string) *ShortenBulkFirestore {
 	return &ShortenBulkFirestore{
 		envName,
 	}

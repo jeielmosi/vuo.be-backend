@@ -185,6 +185,10 @@ func (g *GAMShortenBulkGateway) Post(shortenBulk entities.ShortenBulkEntity) (st
 }
 
 func NewGAMShortenBulkGateway(envName string) (shorten_bulk_gateway.ShortenBulkGateway, error) {
+	return newGAMShortenBulkGateway(envName)
+}
+
+func newGAMShortenBulkGateway(envName string) (*GAMShortenBulkGateway, error) {
 	firestore := firestore_shorten_bulk.NewShortenBulkFirestore(envName)
 	var repos = &[]*shorten_bulk.ShortenBulkRepository{
 		&firestore,

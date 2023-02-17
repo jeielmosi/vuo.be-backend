@@ -21,10 +21,10 @@ const (
 	incrementClicksHash = "+increment_clicks"
 )
 
-func getFirestore() shorten_bulk.ShortenBulkRepository {
+func getFirestore() *ShortenBulkFirestore {
 	config.Load()
 	envName := os.Getenv("TEST_ENV")
-	return NewShortenBulkFirestore(envName)
+	return newShortenBulkFirestore(envName)
 }
 
 func getExpectedGetDTO() (

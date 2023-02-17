@@ -16,10 +16,10 @@ const (
 	getHash = "+get_getway"
 )
 
-func getGAM() (shorten_bulk_gateway.ShortenBulkGateway, error) {
+func getGAM() (*GAMShortenBulkGateway, error) {
 	config.Load()
 	envName := os.Getenv("TEST_ENV")
-	return NewGAMShortenBulkGateway(envName)
+	return newGAMShortenBulkGateway(envName)
 }
 
 func getRandomEntity() (
