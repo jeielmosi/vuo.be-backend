@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	entities "github.com/jei-el/vuo.be-backend/src/core/domain/shorten-bulk"
@@ -134,7 +135,7 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 		if mp[key] == nil {
 			continue
 		}
-		timestamp := repository_helpers.TimeTo10NanosecondsString(mp[key].CreatedAt)
+		timestamp := repository_helpers.TimeToTimestamp1e8(mp[key].CreatedAt)
 		if lastTimestamp < timestamp {
 			lastTimestamp = timestamp
 		}
@@ -145,11 +146,7 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 			return errors.New("Empty hash")
 		}
 
-		if dto.Locked {
-			return errors.New("Locked hash")
-		}
-
-		timestamp := repository_helpers.TimeTo10NanosecondsString(dto.CreatedAt)
+		timestamp := repository_helpers.TimeToTimestamp1e8(dto.CreatedAt)
 		if timestamp > lastTimestamp {
 			return errors.New("Element is not old")
 		}
@@ -165,9 +162,11 @@ func (g *GAMShortenBulkGateway) postAtOldHash(
 
 	for _, idx := range perm {
 		hash := keys[idx]
-		dto := mp[hash]
+		if strings.HasPrefix(hash, "+") {
+			continue
+		}
 
-		err = g.post(hash, dto.Entity, stopFunc)
+		err = g.post(hash, shortenBulk, stopFunc)
 		if err == nil {
 			return hash, err
 		}

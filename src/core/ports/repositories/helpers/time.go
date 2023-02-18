@@ -4,21 +4,21 @@ import (
 	"time"
 )
 
-const _10NanosecondsPattern = "2006-01-02T15:04:05.99999999Z"
+const timestamp1e8Pattern = "2006-01-02T15:04:05.99999999"
 
-func NewTimeFrom10NanosecondsString(timestamp *string) (*time.Time, error) {
+func NewTimeFromTimestamp1e8(timestamp *string) (*time.Time, error) {
 	if timestamp == nil {
 		return nil, nil
 	}
-	res, err := time.Parse(_10NanosecondsPattern, *timestamp)
+	res, err := time.Parse(timestamp1e8Pattern, *timestamp)
 
 	return &res, err
 }
 
-func TimeTo10NanosecondsString(t time.Time) string {
-	return t.UTC().Format(_10NanosecondsPattern)
+func TimeToTimestamp1e8(t time.Time) string {
+	return t.UTC().Format(timestamp1e8Pattern)
 }
 
-func Now10NanosecondsString() string {
-	return time.Now().UTC().Format(_10NanosecondsPattern)
+func NowTimestamp1e8() string {
+	return time.Now().UTC().Format(timestamp1e8Pattern)
 }

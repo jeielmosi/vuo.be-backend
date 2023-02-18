@@ -120,7 +120,7 @@ func (f *ShortenBulkFirestore) IncrementClicks(hash string, updatedAt time.Time)
 	}
 	defer client.Close()
 
-	timestamp := repository_helpers.TimeTo10NanosecondsString(updatedAt)
+	timestamp := repository_helpers.TimeToTimestamp1e8(updatedAt)
 
 	ref := client.Collection(ShortenBulkCollection).Doc(hash)
 	fn := func(ctx context.Context, tx *firestore.Transaction) error {
@@ -150,7 +150,7 @@ func (f *ShortenBulkFirestore) updateLocked(hash string, locked bool, updatedAt 
 		return err
 	}
 	defer client.Close()
-	timestamp := repository_helpers.TimeTo10NanosecondsString(updatedAt)
+	timestamp := repository_helpers.TimeToTimestamp1e8(updatedAt)
 	ref := client.Collection(ShortenBulkCollection).Doc(hash)
 
 	fn := func(ctx context.Context, tx *firestore.Transaction) error {

@@ -32,8 +32,8 @@ func getExpectedGetDTO() (
 	*repositories.RepositoryDTO[entities.ShortenBulkEntity],
 	error,
 ) {
-	timestamp := "0000-01-01T00:00:00Z"
-	timeObj, err := repository_helpers.NewTimeFrom10NanosecondsString(&timestamp)
+	timestamp := "0000-01-01T00:00:00"
+	timeObj, err := repository_helpers.NewTimeFromTimestamp1e8(&timestamp)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +69,8 @@ func getRandomDTO() (
 
 	entity := entities.NewShortenBulkEntity(url, clicks)
 
-	timestamp := "9999-12-31T23:59:59Z"
-	date, err := repository_helpers.NewTimeFrom10NanosecondsString(&timestamp)
+	timestamp := "9999-12-31T23:59:59.99999999"
+	date, err := repository_helpers.NewTimeFromTimestamp1e8(&timestamp)
 	if err != nil || date == nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func TestGetOldest1(t *testing.T) {
 	shorten_bulk.TestGetOldest(firestore, exp, t)
 }
 
-func TestGetOldest30(t *testing.T) {
+func TestGetOldest31(t *testing.T) {
 	firestore := getFirestore()
 
 	dto, err := getExpectedGetDTO()
@@ -121,7 +121,7 @@ func TestGetOldest30(t *testing.T) {
 	exp := map[string]*repositories.RepositoryDTO[entities.ShortenBulkEntity]{}
 	exp[getHash] = dto
 
-	size := 30
+	size := 31
 	res, err := firestore.GetOldest(size)
 	if err != nil {
 		t.Errorf("Test error at get oldest elements: %s", err.Error())

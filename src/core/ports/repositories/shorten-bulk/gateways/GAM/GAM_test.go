@@ -1,6 +1,7 @@
 package GAM
 
 import (
+	"log"
 	"math/rand"
 	"os"
 	"testing"
@@ -66,4 +67,38 @@ func TestPost(t *testing.T) {
 		t.Errorf("Error creating a entity: nil pointer")
 	}
 	shorten_bulk_gateway.TestPost(gam, *exp, t)
+}
+
+func TestPostAtOldHash(t *testing.T) {
+	gam, err := getGAM()
+	if err != nil {
+		t.Errorf("Creating a time: %s", err.Error())
+	}
+
+	exp, err := getRandomEntity()
+	if err != nil {
+		t.Errorf("Error creating a entity: %s", err.Error())
+	}
+	if exp == nil {
+		t.Errorf("Error creating a entity: nil pointer")
+	}
+
+	hash, err := gam.postAtOldHash(exp)
+	if err != nil {
+		t.Errorf("Test error at post entity: %s", err.Error())
+		return
+	}
+
+	res, err := gam.Get(hash)
+	if err != nil {
+		t.Errorf("Test error at get entity at hash '%s': %s", hash, err.Error())
+		return
+	}
+
+	if (exp.Clicks+1) != res.Clicks || exp.URL != res.URL {
+		log.Println("res:", res)
+		log.Println("exp:", exp)
+
+		t.Errorf("Result and expected are different")
+	}
 }

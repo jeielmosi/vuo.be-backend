@@ -57,7 +57,7 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteSingleFunc(
 	for result := range resCh {
 		timestamp := ""
 		if result != nil {
-			timestamp = helpers.TimeTo10NanosecondsString(result.UpdatedAt)
+			timestamp = helpers.TimeToTimestamp1e8(result.UpdatedAt)
 		}
 
 		count, ok := countMp[timestamp]
@@ -130,7 +130,7 @@ func (o *PigeonholeOrchestrator[T, K]) ExecuteMultipleFunc(
 
 			timestamp := ""
 			if dto != nil {
-				timestamp = helpers.TimeTo10NanosecondsString(dto.UpdatedAt)
+				timestamp = helpers.TimeToTimestamp1e8(dto.UpdatedAt)
 			}
 
 			count, _ := countMp[hash][timestamp]

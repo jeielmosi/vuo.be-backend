@@ -22,8 +22,8 @@ func NewShortenBulkFlattenDTO(
 ) ShortenBulkFlattenDTO {
 	ans := ShortenBulkFlattenDTO{}
 
-	ans[CreatedAtField] = helpers.TimeTo10NanosecondsString(dto.CreatedAt)
-	ans[UpdatedAtField] = helpers.TimeTo10NanosecondsString(dto.UpdatedAt)
+	ans[CreatedAtField] = helpers.TimeToTimestamp1e8(dto.CreatedAt)
+	ans[UpdatedAtField] = helpers.TimeToTimestamp1e8(dto.UpdatedAt)
 	ans[URLField] = dto.Entity.URL
 	ans[LockedField] = dto.Locked
 	ans[ClicksField] = dto.Entity.Clicks
@@ -44,7 +44,7 @@ func ToRepositoryDTO(flatten ShortenBulkFlattenDTO) (
 		return nil, nil
 	}
 
-	createdAt, err := repository_helpers.NewTimeFrom10NanosecondsString(&createdAtStr)
+	createdAt, err := repository_helpers.NewTimeFromTimestamp1e8(&createdAtStr)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +53,7 @@ func ToRepositoryDTO(flatten ShortenBulkFlattenDTO) (
 	if !ok {
 		return nil, nil
 	}
-	updatedAt, err := repository_helpers.NewTimeFrom10NanosecondsString(&updatedAtStr)
+	updatedAt, err := repository_helpers.NewTimeFromTimestamp1e8(&updatedAtStr)
 	if err != nil {
 		return nil, err
 	}
