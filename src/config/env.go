@@ -10,6 +10,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const CURRENT_ENV = "CURRENT_ENV"
+
 func getEnvsPath() string {
 	_, b, _, _ := runtime.Caller(0)
 	configPath := filepath.Dir(b)
@@ -20,25 +22,28 @@ func getEnvsPath() string {
 	return envsPath
 }
 
-func GetFirebasePath(envName string) string {
+func LoadEnv(envName string) {
+
 	envsPath := getEnvsPath()
 	envPath := filepath.Join(envsPath, envName)
+
 	firebasePath := filepath.Join(envPath, "firebase.json")
-
-	return firebasePath
-}
-
-func LoadEnv(envName string) {
-	firebasePath := GetFirebasePath(envName)
 	err := os.Setenv(envName+"_FIREBASE_PATH", firebasePath)
 	if err != nil {
 		log.Fatalf("Error setting firebase path file")
 		os.Exit(1)
 	}
+
+	dotEnvPath := filepath.Join(envPath, ".env")
+	err = godotenv.Overload(dotEnvPath)
+	if err != nil {
+		log.Fatalf("Error loading " + dotEnvPath + " file")
+		os.Exit(1)
+	}
 }
 
 func GetEnv() string {
-	return os.Getenv("CURRENT_ENV")
+	return os.Getenv(CURRENT_ENV)
 }
 
 var once sync.Once

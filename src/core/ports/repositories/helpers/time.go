@@ -1,6 +1,7 @@
 package repository_helpers
 
 import (
+	"errors"
 	"time"
 )
 
@@ -8,7 +9,7 @@ const timestamp1e8Pattern = "2006-01-02T15:04:05.99999999"
 
 func NewTimeFromTimestamp1e8(timestamp *string) (*time.Time, error) {
 	if timestamp == nil {
-		return nil, nil
+		return nil, errors.New("Timestamp is nil")
 	}
 	res, err := time.Parse(timestamp1e8Pattern, *timestamp)
 
