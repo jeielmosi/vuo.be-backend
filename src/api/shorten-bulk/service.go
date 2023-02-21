@@ -45,6 +45,10 @@ func (s *ShortenBulkService) Get(hash string) (map[string]interface{}, int) {
 		return ans, http.StatusInternalServerError
 	}
 
+	if shortenBulk == nil {
+		return ans, http.StatusNotFound
+	}
+
 	return usecases.ToMapInterface(shortenBulk), http.StatusOK
 }
 

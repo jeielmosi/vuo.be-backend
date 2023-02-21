@@ -18,11 +18,25 @@ func (c *ShortenBulkController) Post(w http.ResponseWriter, r *http.Request) {
 	body := map[string]interface{}{}
 	json.NewDecoder(r.Body).Decode(&body)
 
-	log.Println(body)
+	if len(body) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	url := body[api_helpers.URLField]
+	urlInterface, ok := body[api_helpers.URLField]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 
-	mp, statusCode := c.service.Post(url.(string))
+	url, ok := urlInterface.(string)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	//TODO: fix error when is not string
+	mp, statusCode := c.service.Post(url)
 
 	w.WriteHeader(statusCode)
 	w.Header().Set("Content-Type", "application/json")
