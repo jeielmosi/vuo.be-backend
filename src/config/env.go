@@ -10,8 +10,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const CURRENT_ENV = "CURRENT_ENV"
-
 func getEnvsPath() string {
 	_, b, _, _ := runtime.Caller(0)
 	configPath := filepath.Dir(b)
@@ -42,10 +40,6 @@ func LoadEnv(envName string) {
 	}
 }
 
-func GetEnv() string {
-	return os.Getenv(CURRENT_ENV)
-}
-
 var once sync.Once
 
 func loadDefaulfEnv() {
@@ -67,6 +61,6 @@ func loadDefaulfEnv() {
 
 func Load() {
 	loadDefaulfEnv()
-	envName := GetEnv()
+	envName := os.Getenv(CURRENT_ENV)
 	LoadEnv(envName)
 }

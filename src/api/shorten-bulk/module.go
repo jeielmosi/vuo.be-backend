@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	api_interfaces "github.com/jei-el/vuo.be-backend/src/api/interfaces"
+	config "github.com/jei-el/vuo.be-backend/src/config"
 	GAM "github.com/jei-el/vuo.be-backend/src/core/ports/repositories/shorten-bulk/gateways/GAM"
 )
 
@@ -19,7 +20,7 @@ func (m *ShortenBulkModule) Init(r *chi.Mux) {
 }
 
 func NewShortenBulkModule() *ShortenBulkModule {
-	envName := os.Getenv("CURRENT_ENV")
+	envName := os.Getenv(config.CURRENT_ENV)
 	gateway, err := GAM.NewGAMShortenBulkGateway(envName)
 	if err != nil {
 		log.Println("Error on create a gatway on ShortenBulkModule")
