@@ -28,7 +28,7 @@ func LoadEnv(envName string) {
 	firebasePath := filepath.Join(envPath, "firebase.json")
 	err := os.Setenv(envName+"_FIREBASE_PATH", firebasePath)
 	if err != nil {
-		log.Fatalf("Error setting firebase path file")
+		log.Fatalf("Error setting firebase path file: %s", err.Error())
 		os.Exit(1)
 	}
 

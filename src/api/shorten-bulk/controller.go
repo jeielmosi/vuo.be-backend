@@ -18,21 +18,25 @@ func (c *ShortenBulkController) Post(w http.ResponseWriter, r *http.Request) {
 	body := map[string]interface{}{}
 	json.NewDecoder(r.Body).Decode(&body)
 
-	log.Println(body)
+	iUrl := body[api_helpers.URLField]
 
-	url := body[api_helpers.URLField]
+	url, ok := iUrl.(string)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Fatalf("Field %s not found", api_helpers.URLField)
+	}
 
-	mp, statusCode := c.service.Post(url.(string))
+	mp, statusCode := c.service.Post(url)
 
 	w.WriteHeader(statusCode)
 	w.Header().Set("Content-Type", "application/json")
 	res, err := json.Marshal(mp)
 	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatalf("Error happened in JSON marshal. Err: %s", err.Error())
 	}
 
 	w.Write(res)
-
 }
 
 func (c *ShortenBulkController) Get(w http.ResponseWriter, r *http.Request) {
