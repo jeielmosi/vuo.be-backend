@@ -6,7 +6,7 @@ COPY ./ ./
 
 RUN go build -o ./server ./src/cmd/http/main.go
 
-FROM scratch
+FROM alpine:3.17
 
 WORKDIR /app
 
