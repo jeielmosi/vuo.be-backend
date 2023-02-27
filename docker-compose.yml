@@ -1,6 +1,8 @@
-version: '3'
+version: "3.8"
 services:
   server:
+    container_name: "vuo.be-backend_REST-server"
     build: .
     ports: 
+      #TODO: change to env var
       - 8081:8081
